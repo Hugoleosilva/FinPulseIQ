@@ -33,19 +33,32 @@ const IGNORAR = [
   "TOTAL PROVENTOS",
   "TOTAL DE DESCONTOS",
   "TOTAL DESCONTOS",
+  "TOTAL BRUTO",
   "BASE INSS",
   "BASE FGTS",
+  "BASE PARA FGTS",
   "BASE IRRF",
   "BASE CALC",
   "BASE DE CALCULO",
+  "BASE IR PLR",
+  "BASE PARA CALCULO",
   "FGTS DO MES",
   "FGTS MES",
   "DEPOSITO FGTS",
   "SAL. BASE",
+  "SAL. DO CALCULO",
+  "SAL DO CALCULO",
   "SALARIO BASE INSS",
   "SALARIO CONTRIB",
+  "SAL. CONTRIBUICAO",
+  "SALARIO DE CONTRIBUICAO",
+  "SALARIO CONTRIBUICAO",
   "MARGEM CONSIG",
   "SALARIO FAMILIA BASE",
+  "PLR ANUAL",
+  "PENSAO ALIMENTICIA JUDICIAL",
+  "DEP. SAL. FAMILIA",
+  "DEP. IRRF",
 ];
 
 const CHAVE_DESCONTO = [
@@ -68,8 +81,13 @@ const CHAVE_DESCONTO = [
   "HAPVIDA",
   "BRADESCO SAUDE",
   "COPARTICIPACAO",
+  "COOPARTICIPACAO",
   "CO-PARTICIPACAO",
   "COPARTIC",
+  "COOPARTIC",
+  "COPART ",
+  "DESC COOP",
+  "DESC. COOP",
   "VALE TRANSPORTE",
   "VALE-TRANSPORTE",
   "VT ",
@@ -169,6 +187,37 @@ function contem(alvo: string, lista: string[]): boolean {
   return lista.some((k) => alvo.includes(k));
 }
 
+/** Código do lançamento no início da linha ("1038 Auxilio Creche..."). */
+function codigoDaLinha(linha: string): number | null {
+  const m = linha.match(/^\s*(\d{2,5})\s+\D/);
+  return m ? Number(m[1]) : null;
+}
+
+/** Linha só com números / datas / hífens — a "linha de valores" de um bloco. */
+function soNumeros(linha: string): boolean {
+  return /^[\s\d.,/:-]+$/.test(linha);
+}
+
+type Tipo = "provento" | "desconto" | null;
+
+function classificar(N: string, codigo: number | null): Tipo {
+  const desc = contem(N, CHAVE_DESCONTO);
+  const prov = contem(N, CHAVE_PROVENTO);
+  if (desc && !prov) return "desconto";
+  if (prov && !desc) return "provento";
+  // Convenção comum: 1xxx = provento, 2xxx–9xxx = desconto
+  if (codigo != null) {
+    if (codigo >= 1000 && codigo <= 1899) return "provento";
+    if (codigo >= 1900 && codigo <= 9999) return "desconto";
+  }
+  if (desc) return "desconto";
+  if (prov) return "provento";
+  if (/\b(DESC|DEDUC|CONTRIB|IMPOSTO|PENSAO|EMPREST|CONSIG)/.test(N)) {
+    return "desconto";
+  }
+  return null;
+}
+
 export function interpretarTextoHolerite(texto: string): HoleriteLido {
   const linhas = texto
     .split(/\r?\n/)
@@ -178,34 +227,47 @@ export function interpretarTextoHolerite(texto: string): HoleriteLido {
   const proventos: ItemHolerite[] = [];
   const descontos: ItemHolerite[] = [];
   let liquidoDetectado: number | null = null;
+  let liquidoNaProxima = false;
 
   for (const linha of linhas) {
     const N = norm(linha);
     const valores = valoresNaLinha(linha);
-    if (valores.length === 0) continue;
 
-    // valor da linha = último número monetário (proventos costumam ter
-    // "referência" antes do valor: "40,00   1.234,56")
+    // Linha de rótulos (sem valor): guarda se o último rótulo é "líquido"
+    if (valores.length === 0) {
+      liquidoNaProxima = contem(N, CHAVE_LIQUIDO);
+      continue;
+    }
+
     const valor = valores[valores.length - 1];
 
+    // "... Líquido a Receber" numa linha, e os valores na linha seguinte
+    if (liquidoNaProxima && soNumeros(linha)) {
+      if (valor > 0) liquidoDetectado = valor;
+      liquidoNaProxima = false;
+      continue;
+    }
+    liquidoNaProxima = false;
+
     if (contem(N, CHAVE_LIQUIDO)) {
-      if (liquidoDetectado === null || valor > liquidoDetectado) {
-        liquidoDetectado = valor;
-      }
+      if (valor > 0) liquidoDetectado = valor;
       continue;
     }
 
     if (contem(N, IGNORAR)) continue;
     if (valor <= 0) continue;
+    // linha de valores solta, sem rótulo: ignora
+    if (soNumeros(linha)) continue;
+
+    const codigo = codigoDaLinha(linha);
+    const tipo = classificar(N, codigo);
+    if (!tipo) continue;
 
     const rotulo = rotuloDaLinha(linha) || "Item";
-
-    if (contem(N, CHAVE_DESCONTO)) {
-      descontos.push({ descricao: rotulo, valor });
-    } else if (contem(N, CHAVE_PROVENTO)) {
-      proventos.push({ descricao: rotulo, valor });
-    }
-    // linhas sem palavra-chave conhecida são ignoradas (evita ruído)
+    (tipo === "desconto" ? descontos : proventos).push({
+      descricao: rotulo,
+      valor,
+    });
   }
 
   return {
