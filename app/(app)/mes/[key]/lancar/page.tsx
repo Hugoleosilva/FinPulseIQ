@@ -7,7 +7,7 @@ import { Card, Aviso } from "@/components/ui";
 import { WizardLancamento, type PassoWizard } from "./WizardLancamento";
 import { FormSaldoInicial } from "./FormSaldoInicial";
 import { FormReceita } from "./FormReceita";
-import { FormSalario } from "./FormSalario";
+import { SecaoSalario } from "./SecaoSalario";
 import { FormDespesa } from "./FormDespesa";
 import { CopiarMesAnterior } from "./CopiarMesAnterior";
 import { ListaReceitas } from "./ListaReceitas";
@@ -37,6 +37,9 @@ export default async function PaginaLancar({
     (d) => d.natureza === "fixa" || d.natureza === "parcelada",
   ).length;
 
+  const salario = mes.receitas.find((r) => r.detalhe != null);
+  const outrasReceitas = mes.receitas.filter((r) => r.detalhe == null);
+
   const totalReceitas = mes.receitas.reduce((a, r) => a + r.valor, 0);
   const totalDespesas = mes.despesas.reduce((a, d) => a + d.valor, 0);
   const saldo = mes.saldoInicial + totalReceitas - totalDespesas;
@@ -61,16 +64,7 @@ export default async function PaginaLancar({
             qtdReceitasFixas={receitasFixasAnt}
             qtdDespesasRecorrentes={despesasRecorrentesAnt}
           />
-          <div>
-            <h3 className="mb-2 text-lg font-bold">Seu salário</h3>
-            <p className="mb-3 text-sm text-texto-suave">
-              Preencha proventos e descontos (ou envie o PDF do holerite). Entra
-              como receita o valor <strong>líquido</strong>, que é o que cai na
-              conta. Se você teve aumento, use o valor novo a partir do mês em que
-              passou a valer.
-            </p>
-            <FormSalario chaveMes={key} />
-          </div>
+          <SecaoSalario chaveMes={key} salario={salario} />
 
           <div>
             <h3 className="mb-2 text-lg font-bold">Outras receitas</h3>
@@ -81,7 +75,9 @@ export default async function PaginaLancar({
             <FormReceita chaveMes={key} />
           </div>
 
-          <ListaReceitas chaveMes={key} receitas={mes.receitas} />
+          {outrasReceitas.length > 0 ? (
+            <ListaReceitas chaveMes={key} receitas={outrasReceitas} />
+          ) : null}
         </div>
       ),
     },
