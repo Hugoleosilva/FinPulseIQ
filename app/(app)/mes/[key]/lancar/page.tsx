@@ -69,8 +69,8 @@ export default async function PaginaLancar({
           <div>
             <h3 className="mb-2 text-lg font-bold">Outras receitas</h3>
             <p className="mb-3 text-sm text-texto-suave">
-              Bicos, aluguel que você recebe, pensão, ajuda de familiares,
-              vendas, rendimentos.
+              Aposentadoria ou pensão (sem descontos), aluguel que você recebe,
+              bicos, ajuda de familiares, vendas, rendimentos.
             </p>
             <FormReceita chaveMes={key} />
           </div>
