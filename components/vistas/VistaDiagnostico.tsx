@@ -4,11 +4,7 @@ import {
   resumoSemExtraordinarios,
   ROTULO_FAIXA,
 } from "@/lib/calculos";
-import {
-  gerarDiagnosticoMarkdown,
-  perguntaParaIA,
-  economiaPotencial,
-} from "@/lib/exportar";
+import { gerarDiagnosticoMarkdown, economiaPotencial } from "@/lib/exportar";
 import { nomeMes, slugMes, formatBRL, formatPct } from "@/lib/format";
 import { Card, TituloSecao, Aviso, BotaoLink } from "@/components/ui";
 import { SeloNivel } from "@/components/SeloNivel";
@@ -44,7 +40,6 @@ export async function VistaDiagnostico(props: VistaDiagnosticoProps) {
         })
       : null;
   const markdown = gerarDiagnosticoMarkdown(dados);
-  const pergunta = perguntaParaIA();
   const opsSimples = ops.map((o) => ({
     categoria: o.categoria,
     emoji: o.emoji,
@@ -222,7 +217,6 @@ export async function VistaDiagnostico(props: VistaDiagnosticoProps) {
             </TituloSecao>
             <ExportarDiagnostico
               markdown={markdown}
-              pergunta={pergunta}
               nomeArquivo={`diagnostico-financeiro-${slugMes(key)}.md`}
             />
           </Card>

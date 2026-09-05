@@ -11,15 +11,12 @@ const IAS = [
 
 export function ExportarDiagnostico({
   markdown,
-  pergunta,
   nomeArquivo,
 }: {
   markdown: string;
-  pergunta: string;
   nomeArquivo: string;
 }) {
   const [copiadoDoc, setCopiadoDoc] = useState(false);
-  const [copiadoPerg, setCopiadoPerg] = useState(false);
   const [abriu, setAbriu] = useState<string | null>(null);
 
   const copiar = async (texto: string): Promise<boolean> => {
@@ -102,26 +99,9 @@ export function ExportarDiagnostico({
         </Aviso>
       )}
 
-      <div className="rounded-2xl border border-borda bg-fundo p-4">
-        <p className="mb-2 text-sm font-bold text-texto">
-          A pergunta que será feita à IA
-        </p>
-        <pre className="whitespace-pre-wrap break-words text-sm text-texto-suave">
-          {pergunta}
-        </pre>
-        <div className="mt-3">
-          <Botao
-            variante="secundario"
-            onClick={async () => setCopiadoPerg(await copiar(pergunta))}
-          >
-            {copiadoPerg ? "Copiado! ✓" : "Copiar só a pergunta"}
-          </Botao>
-        </div>
-      </div>
-
       <details className="rounded-2xl border border-borda p-4">
         <summary className="cursor-pointer font-bold">
-          Ver o texto completo do diagnóstico
+          Ver o texto completo do diagnóstico e a pergunta que será feita à IA
         </summary>
         <pre className="mt-3 max-h-96 overflow-auto whitespace-pre-wrap break-words rounded-xl bg-fundo p-3 text-xs text-texto-suave">
           {markdown}
