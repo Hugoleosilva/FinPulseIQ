@@ -42,6 +42,12 @@ export function nomeMes(key: string): string {
   return `${MESES[mes - 1]} de ${ano}`;
 }
 
+/** "2026-09" -> "Setembro de 2026" (só a primeira letra maiúscula) */
+export function nomeMesTitulo(key: string): string {
+  const s = nomeMes(key);
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 /** "2026-09" -> "setembro-2026" (para nome de arquivo) */
 export function slugMes(key: string): string {
   const [ano, mes] = key.split("-").map(Number);

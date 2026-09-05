@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { historicoDoUsuario } from "@/lib/diagnostico";
-import { nomeMes, formatBRL } from "@/lib/format";
+import { nomeMesTitulo, formatBRL } from "@/lib/format";
 import { ROTULO_FAIXA } from "@/lib/calculos";
 import { Card, TituloSecao, Aviso, BotaoLink } from "@/components/ui";
 import { SeloNivel } from "@/components/SeloNivel";
@@ -65,8 +65,8 @@ export async function VistaHistorico(props: VistaHistoricoProps) {
                       rotulo={ROTULO_FAIXA[p.faixa]}
                       score={p.score}
                     />
-                    <span className="font-semibold capitalize">
-                      {nomeMes(p.key)}
+                    <span className="font-semibold">
+                      {nomeMesTitulo(p.key)}
                     </span>
                   </div>
                   <div className="flex items-center gap-4 text-sm">

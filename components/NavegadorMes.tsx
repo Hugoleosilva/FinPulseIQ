@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { deslocaMes, nomeMes } from "@/lib/format";
+import { deslocaMes, nomeMesTitulo } from "@/lib/format";
 
 export function NavegadorMes({
   chaveMes,
@@ -19,8 +19,8 @@ export function NavegadorMes({
       <Link href={`${base}/${anterior}${sufixo}`} className={seta} aria-label="Mês anterior">
         ‹
       </Link>
-      <span className="min-w-40 text-center text-lg font-extrabold capitalize">
-        {nomeMes(chaveMes)}
+      <span className="min-w-40 text-center text-lg font-extrabold">
+        {nomeMesTitulo(chaveMes)}
       </span>
       <Link href={`${base}/${proximo}${sufixo}`} className={seta} aria-label="Próximo mês">
         ›
