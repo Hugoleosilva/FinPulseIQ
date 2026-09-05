@@ -8,6 +8,7 @@ import {
   parcelasFuturasDoMes,
   somarCompromissoFuturo,
   classificarDivida,
+  andamentoMes,
   type PontoHistorico,
 } from "./calculos";
 import type { DadosDiagnostico } from "./exportar";
@@ -106,6 +107,7 @@ export async function montarDiagnostico(
     parcelasFuturas,
     compromissoMensalFuturo: compromisso.mensal,
     compromissoFuturo: compromisso,
+    andamento: andamentoMes(mes),
     historico,
   };
 }

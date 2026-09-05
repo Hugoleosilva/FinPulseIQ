@@ -7,6 +7,7 @@ import type {
   FluxoCaixa,
   ParcelaFutura,
   CompromissoFuturoTotal,
+  AndamentoMes,
   PontoHistorico,
 } from "./calculos";
 
@@ -20,6 +21,7 @@ export interface DadosDiagnostico {
   parcelasFuturas: ParcelaFutura[];
   compromissoMensalFuturo: number;
   compromissoFuturo: CompromissoFuturoTotal;
+  andamento: AndamentoMes;
   historico: PontoHistorico[];
 }
 
@@ -56,9 +58,15 @@ export function gerarDiagnosticoMarkdown(d: DadosDiagnostico): string {
 
   add("## Resumo do mês");
   add();
-  add(`- Dinheiro que entrou: ${formatBRL(resumo.receitaTotal)}`);
-  add(`- Dinheiro que saiu: ${formatBRL(resumo.despesaTotal)}`);
-  add(`- Sobra no fim do mês: ${formatBRL(resumo.saldo)}`);
+  if (d.andamento.emAndamento) {
+    add(
+      `> Obs.: o mês ainda está em andamento (dia ${d.andamento.diaDeHoje}). Os números abaixo são a projeção do mês inteiro; ${formatBRL(d.andamento.receitaPrevista)} de receita e ${formatBRL(d.andamento.despesaPrevista)} de despesa ainda não aconteceram.`,
+    );
+    add();
+  }
+  add(`- Dinheiro que entrou (ou vai entrar): ${formatBRL(resumo.receitaTotal)}`);
+  add(`- Dinheiro que saiu (ou vai sair): ${formatBRL(resumo.despesaTotal)}`);
+  add(`- Sobra prevista no fim do mês: ${formatBRL(resumo.saldo)}`);
   add(
     `- Taxa de sobra (quanto da renda sobrou): ${formatPct(resumo.taxaPoupanca, 1)}`,
   );

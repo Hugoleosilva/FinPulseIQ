@@ -136,7 +136,7 @@ export function ValorGrande({
   rotulo: string;
   valor: string;
   cor?: CorValor;
-  dica?: string;
+  dica?: ReactNode;
 }) {
   return (
     <div>
@@ -144,7 +144,7 @@ export function ValorGrande({
       <p className={`tabular text-2xl font-extrabold ${classeCor[cor]}`}>
         {valor}
       </p>
-      {dica ? <p className="mt-0.5 text-xs text-texto-suave">{dica}</p> : null}
+      {dica ? <div className="mt-0.5 text-xs text-texto-suave">{dica}</div> : null}
     </div>
   );
 }

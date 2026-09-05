@@ -12,6 +12,7 @@ import { TabelaOportunidades } from "@/components/TabelaOportunidades";
 import { Simulador } from "@/components/Simulador";
 import { ExportarDiagnostico } from "@/components/ExportarDiagnostico";
 import { NavegadorMes } from "@/components/NavegadorMes";
+import { AvisoAndamento } from "@/components/AvisoAndamento";
 
 export interface VistaDiagnosticoProps {
   userId: string;
@@ -86,6 +87,8 @@ export async function VistaDiagnostico(props: VistaDiagnosticoProps) {
         </Card>
       ) : (
         <>
+          <AvisoAndamento andamento={dados.andamento} nomeMes={nomeMes(key)} />
+
           <Card>
             <TituloSecao>1. Como estão as contas</TituloSecao>
             <div className="flex flex-wrap items-center gap-4">

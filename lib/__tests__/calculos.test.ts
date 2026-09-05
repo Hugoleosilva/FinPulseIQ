@@ -10,6 +10,7 @@ import {
   resumoSemExtraordinarios,
   parcelasFuturasDoMes,
   somarCompromissoFuturo,
+  andamentoMes,
 } from "../calculos";
 
 function d(p: Partial<Despesa>): Despesa {
@@ -266,6 +267,40 @@ describe("saldo inicial negativo (cheque especial)", () => {
     expect(f.dias[0].saldoAcumulado).toBeLessThanOrEqual(-300);
     expect(f.menorSaldo).toBeLessThan(0);
     expect(f.diasNegativos.length).toBeGreaterThan(0);
+  });
+});
+
+describe("andamentoMes", () => {
+  const m: Mes = {
+    ...mes,
+    saldoInicial: 3560.82,
+    receitas: [
+      { id: "r1", descricao: "Salário", valor: 3757.29, dia: 30, tipo: "fixa" },
+      { id: "r2", descricao: "Resgate", valor: 1010.88, dia: 1, tipo: "variavel" },
+    ],
+    despesas: [
+      d({ descricao: "Juros cheque especial", valor: 1672.85, dia: 1 }),
+      d({ descricao: "Compra futura", valor: 500, dia: 25 }),
+    ],
+  };
+
+  it("separa o realizado do previsto no mês corrente", () => {
+    const hoje = new Date("2026-09-05T12:00:00");
+    const a = andamentoMes(m, hoje);
+    expect(a.emAndamento).toBe(true);
+    expect(a.diaDeHoje).toBe(5);
+    expect(a.receitaRealizada).toBeCloseTo(1010.88, 2); // resgate dia 1
+    expect(a.receitaPrevista).toBeCloseTo(3757.29, 2); // salário dia 30
+    expect(a.despesaRealizada).toBeCloseTo(1672.85, 2); // juros dia 1
+    expect(a.despesaPrevista).toBeCloseTo(500, 2); // compra dia 25
+    expect(a.saldoHoje).toBeCloseTo(3560.82 + 1010.88 - 1672.85, 2);
+  });
+
+  it("mês passado conta tudo como realizado", () => {
+    const a = andamentoMes(m, new Date("2026-11-10T12:00:00"));
+    expect(a.emAndamento).toBe(false);
+    expect(a.receitaPrevista).toBe(0);
+    expect(a.despesaPrevista).toBe(0);
   });
 });
 

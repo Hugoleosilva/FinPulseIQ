@@ -199,6 +199,49 @@ export function resumoSemExtraordinarios(r: ResumoMes): ResumoMes {
 }
 
 // ---------------------------------------------------------------------------
+// Andamento do mês (o que já aconteceu × o que ainda é previsão)
+// ---------------------------------------------------------------------------
+
+export interface AndamentoMes {
+  /** true quando o mês analisado é o mês corrente. */
+  emAndamento: boolean;
+  /** dia de referência (hoje, se em andamento). */
+  diaDeHoje: number;
+  receitaRealizada: number;
+  receitaPrevista: number;
+  despesaRealizada: number;
+  despesaPrevista: number;
+  /** saldoInicial + o que já entrou − o que já saiu (estimativa do saldo de hoje). */
+  saldoHoje: number;
+}
+
+export function andamentoMes(mes: Mes, hoje: Date = new Date()): AndamentoMes {
+  const mesKey = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}`;
+  const emAndamento = mes.key === mesKey;
+  const dia = emAndamento ? hoje.getDate() : mes.key < mesKey ? 31 : 0;
+
+  const ate = (arr: { dia: number; valor: number }[]) =>
+    soma(arr.filter((x) => x.dia <= dia).map((x) => x.valor));
+  const depois = (arr: { dia: number; valor: number }[]) =>
+    soma(arr.filter((x) => x.dia > dia).map((x) => x.valor));
+
+  const receitaRealizada = ate(mes.receitas);
+  const despesaRealizada = ate(mes.despesas);
+
+  return {
+    emAndamento,
+    diaDeHoje: dia,
+    receitaRealizada,
+    receitaPrevista: depois(mes.receitas),
+    despesaRealizada,
+    despesaPrevista: depois(mes.despesas),
+    saldoHoje:
+      Math.round((mes.saldoInicial + receitaRealizada - despesaRealizada) * 100) /
+      100,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Fluxo de caixa dia a dia
 // ---------------------------------------------------------------------------
 

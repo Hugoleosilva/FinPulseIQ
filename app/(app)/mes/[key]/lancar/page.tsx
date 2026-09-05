@@ -3,7 +3,9 @@ import type { Metadata } from "next";
 import { exigirSessao } from "@/lib/dal";
 import { getMes, listarCartoes } from "@/lib/repo";
 import { keyValida, nomeMes, formatBRL, deslocaMes } from "@/lib/format";
+import { andamentoMes } from "@/lib/calculos";
 import { Card, Aviso } from "@/components/ui";
+import { AvisoAndamento } from "@/components/AvisoAndamento";
 import { WizardLancamento, type PassoWizard } from "./WizardLancamento";
 import { FormSaldoInicial } from "./FormSaldoInicial";
 import { FormReceita } from "./FormReceita";
@@ -43,6 +45,7 @@ export default async function PaginaLancar({
   const totalReceitas = mes.receitas.reduce((a, r) => a + r.valor, 0);
   const totalDespesas = mes.despesas.reduce((a, d) => a + d.valor, 0);
   const saldo = mes.saldoInicial + totalReceitas - totalDespesas;
+  const andamento = andamentoMes(mes);
 
   const passos: PassoWizard[] = [
     {
@@ -117,26 +120,43 @@ export default async function PaginaLancar({
       titulo: "Conferir",
       subtitulo: "Veja se os números batem com a sua realidade.",
       conteudo: (
-        <Card>
-          <dl className="grid gap-3 sm:grid-cols-2">
-            <Linha
-              rotulo="Você tinha no começo"
-              valor={formatBRL(mes.saldoInicial)}
-            />
-            <Linha rotulo="Entrou no mês" valor={formatBRL(totalReceitas)} />
-            <Linha rotulo="Saiu no mês" valor={formatBRL(totalDespesas)} />
-            <Linha
-              rotulo="Sobra no fim do mês"
-              valor={formatBRL(saldo)}
-              destaque={saldo < 0 ? "perigo" : "ok"}
-            />
-          </dl>
-          <p className="mt-4 text-sm text-texto-suave">
-            {mes.despesas.length} gasto(s) e {mes.receitas.length} receita(s)
-            cadastrados. Quando terminar, clique em “Concluir” para ver seu
-            diagnóstico.
-          </p>
-        </Card>
+        <div className="flex flex-col gap-4">
+          <AvisoAndamento andamento={andamento} nomeMes={nomeMes(key)} />
+          <Card>
+            <dl className="grid gap-3 sm:grid-cols-2">
+              <Linha
+                rotulo="Você tinha no começo"
+                valor={formatBRL(mes.saldoInicial)}
+              />
+              <Linha
+                rotulo={
+                  andamento.emAndamento ? "Entra no mês (previsto)" : "Entrou no mês"
+                }
+                valor={formatBRL(totalReceitas)}
+              />
+              <Linha
+                rotulo={
+                  andamento.emAndamento ? "Sai no mês (previsto)" : "Saiu no mês"
+                }
+                valor={formatBRL(totalDespesas)}
+              />
+              <Linha
+                rotulo={
+                  andamento.emAndamento
+                    ? "Sobra prevista no fim do mês"
+                    : "Sobra no fim do mês"
+                }
+                valor={formatBRL(saldo)}
+                destaque={saldo < 0 ? "perigo" : "ok"}
+              />
+            </dl>
+            <p className="mt-4 text-sm text-texto-suave">
+              {mes.despesas.length} gasto(s) e {mes.receitas.length} receita(s)
+              cadastrados. Quando terminar, clique em “Concluir” para ver seu
+              diagnóstico.
+            </p>
+          </Card>
+        </div>
       ),
     },
   ];

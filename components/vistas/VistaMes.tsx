@@ -7,6 +7,7 @@ import {
   nivelSaude,
   economiaPotencialTotal,
   resumoSemExtraordinarios,
+  andamentoMes,
   ROTULO_FAIXA,
 } from "@/lib/calculos";
 import { compromissoFuturoDoMes } from "@/lib/diagnostico";
@@ -16,6 +17,7 @@ import { SeloNivel } from "@/components/SeloNivel";
 import { BarraCategorias } from "@/components/BarraCategorias";
 import { GraficoFluxo } from "@/components/graficos";
 import { NavegadorMes } from "@/components/NavegadorMes";
+import { AvisoAndamento, DetalheAndamento } from "@/components/AvisoAndamento";
 
 export interface VistaMesProps {
   userId: string;
@@ -44,6 +46,7 @@ export async function VistaMes(props: VistaMesProps) {
 
   const resumo = resumoMes(mes);
   const fluxo = fluxoCaixa(mes);
+  const andamento = andamentoMes(mes);
   const ops = oportunidades(mes, anteriores);
   const nivel = nivelSaude({
     resumo,
@@ -122,6 +125,8 @@ export async function VistaMes(props: VistaMesProps) {
         </Card>
       ) : (
         <>
+          <AvisoAndamento andamento={andamento} nomeMes={nomeMes(key)} />
+
           <Card>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -146,17 +151,35 @@ export async function VistaMes(props: VistaMesProps) {
                 valor={formatBRL(resumo.saldoInicial)}
               />
               <ValorGrande
-                rotulo="Entrou no mês"
+                rotulo={andamento.emAndamento ? "Entra no mês (previsto)" : "Entrou no mês"}
                 valor={formatBRL(resumo.receitaTotal)}
                 cor="ok"
+                dica={
+                  <DetalheAndamento
+                    realizada={andamento.receitaRealizada}
+                    prevista={andamento.receitaPrevista}
+                    emAndamento={andamento.emAndamento}
+                  />
+                }
               />
               <ValorGrande
-                rotulo="Saiu no mês"
+                rotulo={andamento.emAndamento ? "Sai no mês (previsto)" : "Saiu no mês"}
                 valor={formatBRL(resumo.despesaTotal)}
                 cor="alerta"
+                dica={
+                  <DetalheAndamento
+                    realizada={andamento.despesaRealizada}
+                    prevista={andamento.despesaPrevista}
+                    emAndamento={andamento.emAndamento}
+                  />
+                }
               />
               <ValorGrande
-                rotulo="Sobra no fim do mês"
+                rotulo={
+                  andamento.emAndamento
+                    ? "Sobra prevista no fim do mês"
+                    : "Sobra no fim do mês"
+                }
                 valor={formatBRL(resumo.saldo)}
                 cor={resumo.saldo < 0 ? "perigo" : "ok"}
               />
