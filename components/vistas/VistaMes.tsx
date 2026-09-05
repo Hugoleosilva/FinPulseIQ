@@ -11,7 +11,9 @@ import {
   oportunidades,
   nivelSaude,
   economiaPotencialTotal,
+  resumoSemExtraordinarios,
 } from "@/lib/calculos";
+import { ROTULO_FAIXA } from "@/lib/calculos";
 import { nomeMes, formatBRL } from "@/lib/format";
 import { Card, Aviso, BotaoLink, ValorGrande, TituloSecao } from "@/components/ui";
 import { SeloNivel } from "@/components/SeloNivel";
@@ -52,6 +54,14 @@ export async function VistaMes(props: VistaMesProps) {
     fluxo,
     compromissoMensalFuturo: compFuturo,
   });
+  const nivelNormal =
+    resumo.despesaExtraordinaria > 0
+      ? nivelSaude({
+          resumo: resumoSemExtraordinarios(resumo),
+          fluxo,
+          compromissoMensalFuturo: compFuturo,
+        })
+      : null;
 
   const topCategorias = resumo.porCategoria.slice(0, 8);
   const maxCategoria = topCategorias[0]?.total ?? 0;
@@ -156,6 +166,23 @@ export async function VistaMes(props: VistaMesProps) {
               />
             </dl>
           </Card>
+
+          {nivelNormal && (
+            <Aviso
+              tipo="info"
+              titulo={`Este mês teve ${formatBRL(resumo.despesaExtraordinaria)} em gastos que não se repetem`}
+            >
+              Isso derruba o resultado do mês, mas não é o seu ritmo normal —
+              muitas vezes é até um bom movimento (como antecipar parcelas).
+              Sem esses gastos, a sobra teria sido{" "}
+              <strong>
+                {formatBRL(resumoSemExtraordinarios(resumo).saldo)}
+              </strong>{" "}
+              e o nível ficaria em{" "}
+              <strong>{ROTULO_FAIXA[nivelNormal.faixa]}</strong> (
+              {nivelNormal.score}/100).
+            </Aviso>
+          )}
 
           {fluxo.diasNegativos.length > 0 && (
             <Aviso tipo="alerta" titulo="Risco de ficar no vermelho durante o mês">

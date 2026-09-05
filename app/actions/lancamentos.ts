@@ -196,7 +196,13 @@ export async function copiarRecorrentes(
     .map((r) => ({ ...r, id: randomUUID() }));
 
   const novasDespesas = mesAnt.despesas
-    .filter((d) => d.recorrente && !existeDespesa(d))
+    .filter((d) => {
+      if (existeDespesa(d)) return false;
+      if (d.natureza === "fixa") return true;
+      if (d.natureza === "parcelada" && d.parcela)
+        return d.parcela.atual < d.parcela.total;
+      return false;
+    })
     .map((d) => ({
       ...d,
       id: randomUUID(),
@@ -252,6 +258,7 @@ export async function adicionarDespesa(
     meioPagamento: formData.get("meioPagamento"),
     cartaoId: formData.get("cartaoId") || null,
     essencialidade: formData.get("essencialidade"),
+    natureza: formData.get("natureza") || "normal",
     parcelaAtual: formData.get("parcelaAtual") || undefined,
     parcelaTotal: formData.get("parcelaTotal") || undefined,
   });
@@ -260,10 +267,10 @@ export async function adicionarDespesa(
   }
 
   const d = parsed.data;
-  const recorrente = formData.get("recorrente") === "on";
 
   let parcela: Despesa["parcela"] = null;
   if (
+    d.natureza === "parcelada" &&
     d.parcelaTotal &&
     d.parcelaTotal > 1 &&
     d.parcelaAtual &&
@@ -272,6 +279,9 @@ export async function adicionarDespesa(
   ) {
     parcela = { atual: d.parcelaAtual, total: d.parcelaTotal };
   }
+  // "parcelada" sem números válidos vira gasto normal
+  const natureza =
+    d.natureza === "parcelada" && !parcela ? "normal" : d.natureza;
 
   const mes = await getMes(userId, key);
   const nova: Despesa = {
@@ -284,7 +294,8 @@ export async function adicionarDespesa(
     meioPagamento: d.meioPagamento,
     cartaoId: d.meioPagamento === "cartao" ? d.cartaoId ?? null : null,
     essencialidade: d.essencialidade,
-    recorrente,
+    natureza,
+    recorrente: natureza === "fixa",
     parcela,
   };
   await salvarMes(userId, key, { despesas: [...mes.despesas, nova] });

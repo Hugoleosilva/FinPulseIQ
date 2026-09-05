@@ -9,20 +9,33 @@ import type { Mes, Cartao, CompromissoFuturo, Receita, Despesa } from "./tipos";
 
 type MesDoc = Mes;
 
+/** Garante o campo `natureza` em despesas gravadas antes dessa opção existir. */
+function normalizaDespesa(d: Despesa): Despesa {
+  if (d.natureza) return d;
+  const natureza: Despesa["natureza"] = d.parcela
+    ? "parcelada"
+    : d.recorrente
+      ? "fixa"
+      : "normal";
+  return { ...d, natureza };
+}
+
+function normalizaMes(userId: string, d: Partial<MesDoc> & { key: string }): Mes {
+  return {
+    userId,
+    key: d.key,
+    saldoInicial: d.saldoInicial ?? 0,
+    receitas: d.receitas ?? [],
+    despesas: (d.despesas ?? []).map(normalizaDespesa),
+    criadoEm: d.criadoEm ?? "",
+    atualizadoEm: d.atualizadoEm ?? "",
+  };
+}
+
 export async function getMes(userId: string, key: string): Promise<Mes> {
   const c = await col<MesDoc>("months");
   const doc = await c.findOne({ userId, key });
-  if (doc) {
-    return {
-      userId,
-      key,
-      saldoInicial: doc.saldoInicial ?? 0,
-      receitas: doc.receitas ?? [],
-      despesas: doc.despesas ?? [],
-      criadoEm: doc.criadoEm ?? "",
-      atualizadoEm: doc.atualizadoEm ?? "",
-    };
-  }
+  if (doc) return normalizaMes(userId, doc);
   return {
     userId,
     key,
@@ -37,15 +50,7 @@ export async function getMes(userId: string, key: string): Promise<Mes> {
 export async function listarMeses(userId: string): Promise<Mes[]> {
   const c = await col<MesDoc>("months");
   const docs = await c.find({ userId }).sort({ key: 1 }).toArray();
-  return docs.map((d) => ({
-    userId,
-    key: d.key,
-    saldoInicial: d.saldoInicial ?? 0,
-    receitas: d.receitas ?? [],
-    despesas: d.despesas ?? [],
-    criadoEm: d.criadoEm ?? "",
-    atualizadoEm: d.atualizadoEm ?? "",
-  }));
+  return docs.map((d) => normalizaMes(userId, d));
 }
 
 /** Meses anteriores a `key`, do mais antigo para o mais novo. */

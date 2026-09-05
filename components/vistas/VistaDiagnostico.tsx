@@ -1,5 +1,10 @@
 import { montarDiagnostico } from "@/lib/diagnostico";
 import {
+  nivelSaude,
+  resumoSemExtraordinarios,
+  ROTULO_FAIXA,
+} from "@/lib/calculos";
+import {
   gerarDiagnosticoMarkdown,
   perguntaParaIA,
   economiaPotencial,
@@ -30,6 +35,14 @@ export async function VistaDiagnostico(props: VistaDiagnosticoProps) {
   const { resumo, nivel, fluxo, oportunidades: ops } = dados;
 
   const semDados = resumo.receitaTotal === 0 && resumo.despesaTotal === 0;
+  const nivelNormal =
+    resumo.despesaExtraordinaria > 0
+      ? nivelSaude({
+          resumo: resumoSemExtraordinarios(resumo),
+          fluxo,
+          compromissoMensalFuturo: dados.compromissoMensalFuturo,
+        })
+      : null;
   const markdown = gerarDiagnosticoMarkdown(dados);
   const pergunta = perguntaParaIA();
   const opsSimples = ops.map((o) => ({
@@ -89,6 +102,22 @@ export async function VistaDiagnostico(props: VistaDiagnosticoProps) {
               />
               <p className="text-texto-suave">{nivel.resumo}</p>
             </div>
+            {nivelNormal ? (
+              <div className="mt-3">
+                <Aviso tipo="info">
+                  Este mês teve{" "}
+                  <strong>{formatBRL(resumo.despesaExtraordinaria)}</strong> em
+                  gastos extraordinários (não se repetem). Tirando eles, a sobra
+                  seria{" "}
+                  <strong>
+                    {formatBRL(resumoSemExtraordinarios(resumo).saldo)}
+                  </strong>{" "}
+                  e o nível ficaria{" "}
+                  <strong>{ROTULO_FAIXA[nivelNormal.faixa]}</strong> (
+                  {nivelNormal.score}/100).
+                </Aviso>
+              </div>
+            ) : null}
             <ul className="mt-4 grid gap-2 sm:grid-cols-2">
               {nivel.componentes.map((c) => (
                 <li key={c.rotulo} className="rounded-xl border border-borda p-3">

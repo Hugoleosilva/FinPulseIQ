@@ -87,6 +87,9 @@ export const despesaSchema = z.object({
   meioPagamento: z.enum(["dinheiro", "debito", "pix", "cartao", "boleto"]),
   cartaoId: z.string().optional().nullable(),
   essencialidade: z.enum(["essencial", "reduzivel", "desnecessario"]),
+  natureza: z
+    .enum(["normal", "fixa", "parcelada", "extraordinaria"])
+    .default("normal"),
   parcelaAtual: z.coerce.number().int().min(0).max(360).optional(),
   parcelaTotal: z.coerce.number().int().min(0).max(360).optional(),
 });

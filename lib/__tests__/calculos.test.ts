@@ -7,6 +7,7 @@ import {
   economiaPotencialTotal,
   simular,
   nivelSaude,
+  resumoSemExtraordinarios,
 } from "../calculos";
 
 function d(p: Partial<Despesa>): Despesa {
@@ -19,6 +20,7 @@ function d(p: Partial<Despesa>): Despesa {
     subcategoria: "Diversos",
     meioPagamento: "debito",
     essencialidade: "reduzivel",
+    natureza: "normal",
     recorrente: false,
     parcela: null,
     cartaoId: null,
@@ -134,6 +136,50 @@ describe("fluxoCaixa", () => {
     // Netflix dia 3 => saldo -200 antes do salário.
     expect(f.diasNegativos).toContain(3);
     expect(f.menorSaldo).toBeLessThan(0);
+  });
+});
+
+describe("gastos extraordinários", () => {
+  const comExtra: Mes = {
+    ...mes,
+    despesas: [
+      ...mes.despesas,
+      d({
+        categoria: "Fatura de cartão (sem detalhar)",
+        subcategoria: "Fatura do mês",
+        valor: 3000,
+        essencialidade: "reduzivel",
+        natureza: "extraordinaria",
+        descricao: "Antecipei parcelas do cartão",
+        dia: 12,
+      }),
+    ],
+  };
+
+  it("soma os extraordinários à parte e mantém a despesa total real", () => {
+    const r = resumoMes(comExtra);
+    expect(r.despesaExtraordinaria).toBe(3000);
+    expect(r.despesaTotal).toBe(4700 + 3000);
+    expect(r.saldo).toBe(5000 - 7700);
+  });
+
+  it("não conta o extraordinário como vazamento", () => {
+    const ops = oportunidades(comExtra);
+    const opsBase = oportunidades(mes);
+    // o gasto extraordinário de 3000 não infla a categoria Fatura...
+    const faturaComExtra = ops.find((o) => o.categoria.includes("Fatura"));
+    const faturaBase = opsBase.find((o) => o.categoria.includes("Fatura"));
+    expect(faturaComExtra?.gasto).toBe(faturaBase?.gasto);
+    // ...e o potencial total do mês fica igual ao mês sem o extra
+    expect(economiaPotencialTotal(ops)).toBe(economiaPotencialTotal(opsBase));
+  });
+
+  it("resumoSemExtraordinarios devolve o ritmo normal", () => {
+    const r = resumoMes(comExtra);
+    const normal = resumoSemExtraordinarios(r);
+    expect(normal.despesaTotal).toBe(4700);
+    expect(normal.saldo).toBe(300);
+    expect(normal.despesaExtraordinaria).toBe(0);
   });
 });
 

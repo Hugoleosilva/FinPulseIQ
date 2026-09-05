@@ -1,5 +1,5 @@
 import { formatBRL, formatPct, nomeMes } from "./format";
-import { ROTULO_FAIXA } from "./calculos";
+import { ROTULO_FAIXA, resumoSemExtraordinarios } from "./calculos";
 import type {
   ResumoMes,
   Oportunidade,
@@ -60,6 +60,15 @@ export function gerarDiagnosticoMarkdown(d: DadosDiagnostico): string {
   add(
     `- Taxa de sobra (quanto da renda sobrou): ${formatPct(resumo.taxaPoupanca, 1)}`,
   );
+  if (resumo.despesaExtraordinaria > 0) {
+    const semExtra = resumoSemExtraordinarios(resumo);
+    add(
+      `- Deste total, ${formatBRL(resumo.despesaExtraordinaria)} foram gastos extraordinários (não se repetem — ex.: antecipação de parcelas, conserto, compra grande).`,
+    );
+    add(
+      `- Sem os extraordinários, o "ritmo normal" do mês seria: despesas ${formatBRL(semExtra.despesaTotal)}, sobra ${formatBRL(semExtra.saldo)}.`,
+    );
+  }
   add(
     `- Nível de saúde deste mês: ${nivel.rotulo} (${nivel.score}/100) — ${nivel.resumo}`,
   );

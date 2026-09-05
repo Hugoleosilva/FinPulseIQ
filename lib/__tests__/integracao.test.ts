@@ -52,6 +52,7 @@ describe("fluxo completo com banco em memória", () => {
           meioPagamento: "boleto",
           cartaoId: null,
           essencialidade: "essencial",
+          natureza: "fixa",
           recorrente: true,
           parcela: null,
         },

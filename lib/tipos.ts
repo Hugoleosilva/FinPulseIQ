@@ -11,6 +11,16 @@ export type MeioPagamento =
 
 export type TipoReceita = "fixa" | "variavel";
 
+/**
+ * Natureza da despesa:
+ * - normal: gasto comum do mês (mercado, transporte, lazer...)
+ * - fixa: conta que se repete todo mês (aluguel, assinatura...)
+ * - parcelada: compra dividida em várias vezes
+ * - extraordinaria: gasto grande que NÃO faz parte do mês normal
+ *   (ex.: antecipar parcelas do cartão, consertar o carro, comprar eletrodoméstico)
+ */
+export type Natureza = "normal" | "fixa" | "parcelada" | "extraordinaria";
+
 export interface Parcela {
   atual: number;
   total: number;
@@ -45,7 +55,8 @@ export interface Despesa {
   meioPagamento: MeioPagamento;
   cartaoId?: string | null;
   essencialidade: Essencialidade;
-  recorrente: boolean;
+  natureza: Natureza;
+  recorrente: boolean; // mantido em sincronia com natureza === "fixa"
   parcela?: Parcela | null;
 }
 

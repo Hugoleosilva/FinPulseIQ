@@ -202,6 +202,7 @@ function linhasParaResultado(linhas: string[][]): ResultadoParse {
           cClass >= 0 ? row[cClass] : undefined,
           def.essencialidadePadrao,
         ),
+        natureza: "normal",
         recorrente: false,
         parcela: null,
       },

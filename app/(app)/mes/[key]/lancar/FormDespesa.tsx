@@ -30,7 +30,7 @@ export function FormDespesa({
 
   const [categoria, setCategoria] = useState(CATEGORIAS[0].nome);
   const [meio, setMeio] = useState("debito");
-  const [parcelado, setParcelado] = useState(false);
+  const [natureza, setNatureza] = useState("normal");
 
   const def = useMemo(() => getCategoria(categoria), [categoria]);
 
@@ -39,7 +39,7 @@ export function FormDespesa({
       ref.current?.reset();
       // Volta o formulário ao estado inicial após o servidor confirmar.
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setParcelado(false);
+      setNatureza("normal");
     }
   }, [estado]);
 
@@ -159,18 +159,53 @@ export function FormDespesa({
         </CampoSelect>
       ) : null}
 
-      <div className="sm:col-span-2 flex flex-col gap-3 rounded-xl border border-borda bg-white p-3">
-        <label className="flex items-center gap-3 font-semibold">
-          <input
-            type="checkbox"
-            checked={parcelado}
-            onChange={(e) => setParcelado(e.target.checked)}
-            className="h-5 w-5 accent-acento"
-          />
-          Essa compra foi parcelada
-        </label>
-        {parcelado ? (
-          <div className="grid gap-4 sm:grid-cols-2">
+      <fieldset className="sm:col-span-2 flex flex-col gap-2 rounded-xl border border-borda bg-white p-3">
+        <legend className="text-base font-bold text-texto">
+          Esse gasto é...
+        </legend>
+        {[
+          {
+            v: "normal",
+            t: "Um gasto normal do mês",
+            d: "Mercado, transporte, lazer, farmácia...",
+          },
+          {
+            v: "fixa",
+            t: "Uma conta fixa / assinatura",
+            d: "Acontece todo mês pelo mesmo valor (aluguel, luz, Netflix...).",
+          },
+          {
+            v: "parcelada",
+            t: "Uma compra parcelada",
+            d: "Dividida em várias vezes no cartão ou no carnê.",
+          },
+          {
+            v: "extraordinaria",
+            t: "Um gasto extraordinário (não se repete)",
+            d: "Fora do normal: antecipei parcelas do cartão, consertei o carro, comprei um eletrodoméstico. Não conta como vazamento e o sistema mostra como o mês ficaria sem ele.",
+          },
+        ].map((o) => (
+          <label
+            key={o.v}
+            className="flex cursor-pointer items-start gap-3 rounded-lg p-2 hover:bg-fundo has-[:checked]:bg-acento/5"
+          >
+            <input
+              type="radio"
+              name="natureza"
+              value={o.v}
+              checked={natureza === o.v}
+              onChange={(e) => setNatureza(e.target.value)}
+              className="mt-1 h-5 w-5 accent-acento"
+            />
+            <span>
+              <span className="block font-semibold">{o.t}</span>
+              <span className="block text-sm text-texto-suave">{o.d}</span>
+            </span>
+          </label>
+        ))}
+
+        {natureza === "parcelada" ? (
+          <div className="mt-1 grid gap-4 sm:grid-cols-2">
             <CampoTexto
               id="d-parcela-atual"
               name="parcelaAtual"
@@ -193,15 +228,7 @@ export function FormDespesa({
             />
           </div>
         ) : null}
-        <label className="flex items-center gap-3 text-sm text-texto-suave">
-          <input
-            type="checkbox"
-            name="recorrente"
-            className="h-5 w-5 accent-acento"
-          />
-          Esse gasto acontece todo mês (conta fixa, assinatura...)
-        </label>
-      </div>
+      </fieldset>
 
       <div className="sm:col-span-2 flex items-center gap-3">
         <Botao type="submit" disabled={pendente}>

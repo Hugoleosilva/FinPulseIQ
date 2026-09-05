@@ -47,6 +47,8 @@ export interface ResumoMes {
   despesasEssenciais: number;
   despesasReduziveis: number;
   despesasDesnecessarias: number;
+  /** Gastos grandes que não fazem parte do mês normal (ex.: antecipar parcelas). */
+  despesaExtraordinaria: number;
   porCategoria: LinhaCategoria[];
 }
 
@@ -114,7 +116,29 @@ export function resumoMes(mes: Mes): ResumoMes {
     despesasEssenciais: porEssencialidade("essencial"),
     despesasReduziveis: porEssencialidade("reduzivel"),
     despesasDesnecessarias: porEssencialidade("desnecessario"),
+    despesaExtraordinaria: soma(
+      mes.despesas
+        .filter((d) => d.natureza === "extraordinaria")
+        .map((d) => d.valor),
+    ),
     porCategoria,
+  };
+}
+
+/**
+ * Como o mês teria ficado sem os gastos extraordinários — o "ritmo normal".
+ * Ajusta só o necessário para recalcular o nível de saúde.
+ */
+export function resumoSemExtraordinarios(r: ResumoMes): ResumoMes {
+  if (r.despesaExtraordinaria <= 0) return r;
+  const despesaTotal = r.despesaTotal - r.despesaExtraordinaria;
+  const saldo = r.saldoInicial + r.receitaTotal - despesaTotal;
+  return {
+    ...r,
+    despesaTotal,
+    saldo,
+    taxaPoupanca: r.receitaTotal > 0 ? saldo / r.receitaTotal : 0,
+    despesaExtraordinaria: 0,
   };
 }
 
@@ -251,10 +275,15 @@ function classificaPrioridade(potencial: number, receita: number): Prioridade {
 
 export function oportunidades(mes: Mes, historico: Mes[] = []): Oportunidade[] {
   const receita = soma(mes.receitas.map((r) => r.valor));
-  const despesaTotal = soma(mes.despesas.map((d) => d.valor));
+  // Gastos extraordinários não entram: são pontuais, não há o que "reduzir"
+  // nos próximos meses.
+  const relevantes = mes.despesas.filter(
+    (d) => d.natureza !== "extraordinaria",
+  );
+  const despesaTotal = soma(relevantes.map((d) => d.valor));
 
   const grupos = new Map<string, Despesa[]>();
-  for (const d of mes.despesas) {
+  for (const d of relevantes) {
     const arr = grupos.get(d.categoria) ?? [];
     arr.push(d);
     grupos.set(d.categoria, arr);
