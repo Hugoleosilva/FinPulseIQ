@@ -10,7 +10,8 @@ import {
   saldoInicialSchema,
 } from "@/lib/validacao";
 import { camposDeErro, primeiroErroGeral, type EstadoForm } from "@/lib/forms";
-import type { Despesa, Receita } from "@/lib/tipos";
+import { lerHoleritePDF, type HoleriteLido } from "@/lib/holerite";
+import type { Despesa, Receita, ItemHolerite } from "@/lib/tipos";
 
 function revalida(key: string) {
   revalidatePath(`/mes/${key}`);
@@ -56,6 +57,106 @@ export async function adicionarReceita(
   await salvarMes(userId, key, { receitas: [...mes.receitas, nova] });
   revalida(key);
   return { ok: true, mensagem: "Receita adicionada." };
+}
+
+export type EstadoHolerite =
+  | { ok: true; dados: HoleriteLido }
+  | { ok: false; erro: string };
+
+/** Lê um PDF de holerite e devolve os itens encontrados (não salva nada). */
+export async function analisarHolerite(
+  formData: FormData,
+): Promise<EstadoHolerite> {
+  await exigirSessao();
+  const arquivo = formData.get("arquivo");
+  if (!(arquivo instanceof File) || arquivo.size === 0) {
+    return { ok: false, erro: "Escolha o arquivo do holerite." };
+  }
+  if (arquivo.type !== "application/pdf") {
+    return {
+      ok: false,
+      erro: "A leitura automática funciona só com PDF (não com foto).",
+    };
+  }
+  if (arquivo.size > 5 * 1024 * 1024) {
+    return { ok: false, erro: "Arquivo muito grande (limite de 5 MB)." };
+  }
+  const dados = await lerHoleritePDF(arquivo);
+  if (!dados.textoOk) {
+    return {
+      ok: false,
+      erro:
+        "Não consegui ler o texto do PDF (parece ser uma imagem/escaneado). Preencha os campos à mão.",
+    };
+  }
+  return { ok: true, dados };
+}
+
+function lerItens(
+  formData: FormData,
+  prefixo: string,
+): ItemHolerite[] {
+  const descricoes = formData.getAll(`${prefixo}Descricao`).map(String);
+  const valores = formData.getAll(`${prefixo}Valor`).map(String);
+  const out: ItemHolerite[] = [];
+  for (let i = 0; i < descricoes.length; i++) {
+    const descricao = descricoes[i]?.trim();
+    const valor = Number(
+      (valores[i] ?? "")
+        .trim()
+        .replace(/\s/g, "")
+        .replace(/^r\$/i, "")
+        .replace(/\./g, "")
+        .replace(",", "."),
+    );
+    if (descricao && Number.isFinite(valor) && valor > 0) {
+      out.push({ descricao, valor: Math.round(valor * 100) / 100 });
+    }
+  }
+  return out;
+}
+
+export async function adicionarSalario(
+  key: string,
+  _prev: EstadoForm,
+  formData: FormData,
+): Promise<EstadoForm> {
+  const { userId } = await exigirSessao();
+
+  const proventos = lerItens(formData, "provento");
+  const descontos = lerItens(formData, "desconto");
+
+  if (proventos.length === 0) {
+    return { ok: false, erro: "Informe pelo menos um provento (o salário)." };
+  }
+
+  const somaProventos = proventos.reduce((a, i) => a + i.valor, 0);
+  const somaDescontos = descontos.reduce((a, i) => a + i.valor, 0);
+  const liquido = Math.round((somaProventos - somaDescontos) * 100) / 100;
+
+  if (liquido <= 0) {
+    return {
+      ok: false,
+      erro: "Os descontos ficaram maiores que os proventos. Confira os valores.",
+    };
+  }
+
+  const dia = Number(formData.get("dia")) || 5;
+  const descricao = String(formData.get("descricao") || "").trim() || "Salário";
+
+  const nova: Receita = {
+    id: randomUUID(),
+    descricao: `${descricao} (líquido)`,
+    valor: liquido,
+    dia: Math.min(31, Math.max(1, dia)),
+    tipo: "fixa",
+    detalhe: { proventos, descontos },
+  };
+
+  const mes = await getMes(userId, key);
+  await salvarMes(userId, key, { receitas: [...mes.receitas, nova] });
+  revalida(key);
+  return { ok: true, mensagem: "Salário registrado." };
 }
 
 export async function removerReceita(key: string, id: string): Promise<void> {

@@ -10,6 +10,7 @@ import { BotaoExcluir } from "@/components/BotaoExcluir";
 import { WizardLancamento, type PassoWizard } from "./WizardLancamento";
 import { FormSaldoInicial } from "./FormSaldoInicial";
 import { FormReceita } from "./FormReceita";
+import { FormSalario } from "./FormSalario";
 import { FormDespesa } from "./FormDespesa";
 
 export const metadata: Metadata = { title: "Preencher o mês — FinPulseIQ" };
@@ -45,8 +46,29 @@ export default async function PaginaLancar({
       subtitulo:
         "Cadastre tudo o que você recebe no mês: salário, bicos, ajuda, aluguel que recebe.",
       conteudo: (
-        <div className="flex flex-col gap-4">
-          <FormReceita chaveMes={key} />
+        <div className="flex flex-col gap-6">
+          <div>
+            <h3 className="mb-2 text-lg font-bold">Seu salário</h3>
+            <p className="mb-3 text-sm text-texto-suave">
+              Preencha proventos e descontos (ou envie o PDF do holerite). Entra
+              como receita o valor <strong>líquido</strong>, que é o que cai na
+              conta. Se você teve aumento, use o valor novo a partir do mês em que
+              passou a valer.
+            </p>
+            <FormSalario chaveMes={key} />
+          </div>
+
+          <div>
+            <h3 className="mb-2 text-lg font-bold">
+              Outras receitas
+            </h3>
+            <p className="mb-3 text-sm text-texto-suave">
+              Bicos, aluguel que você recebe, pensão, ajuda de familiares,
+              vendas, rendimentos.
+            </p>
+            <FormReceita chaveMes={key} />
+          </div>
+
           <ListaReceitas chaveMes={key} receitas={mes.receitas} />
         </div>
       ),
@@ -139,7 +161,7 @@ function ListaReceitas({
   receitas,
 }: {
   chaveMes: string;
-  receitas: { id: string; descricao: string; valor: number; dia: number }[];
+  receitas: import("@/lib/tipos").Receita[];
 }) {
   if (receitas.length === 0) {
     return (
@@ -151,22 +173,40 @@ function ListaReceitas({
   return (
     <ul className="divide-y divide-borda rounded-xl border border-borda">
       {receitas.map((r) => (
-        <li key={r.id} className="flex items-center justify-between gap-3 p-3">
-          <span>
-            <span className="font-semibold">{r.descricao}</span>
-            <span className="block text-sm text-texto-suave">
-              dia {r.dia}
+        <li key={r.id} className="p-3">
+          <div className="flex items-center justify-between gap-3">
+            <span>
+              <span className="font-semibold">{r.descricao}</span>
+              <span className="block text-sm text-texto-suave">dia {r.dia}</span>
             </span>
-          </span>
-          <span className="flex items-center gap-2">
-            <span className="tabular font-bold text-ok">
-              {formatBRL(r.valor)}
+            <span className="flex items-center gap-2">
+              <span className="tabular font-bold text-ok">
+                {formatBRL(r.valor)}
+              </span>
+              <BotaoExcluir
+                acao={removerReceita.bind(null, chaveMes, r.id)}
+                confirmar={`Apagar a receita "${r.descricao}"?`}
+              />
             </span>
-            <BotaoExcluir
-              acao={removerReceita.bind(null, chaveMes, r.id)}
-              confirmar={`Apagar a receita "${r.descricao}"?`}
-            />
-          </span>
+          </div>
+          {r.detalhe &&
+          (r.detalhe.proventos.length || r.detalhe.descontos.length) ? (
+            <details className="mt-2 text-sm text-texto-suave">
+              <summary className="cursor-pointer">Ver detalhamento</summary>
+              <div className="mt-1 grid gap-1 pl-3">
+                {r.detalhe.proventos.map((p, i) => (
+                  <span key={`p${i}`}>
+                    + {p.descricao}: {formatBRL(p.valor)}
+                  </span>
+                ))}
+                {r.detalhe.descontos.map((d, i) => (
+                  <span key={`d${i}`} className="text-alerta">
+                    − {d.descricao}: {formatBRL(d.valor)}
+                  </span>
+                ))}
+              </div>
+            </details>
+          ) : null}
         </li>
       ))}
     </ul>

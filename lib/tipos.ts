@@ -16,12 +16,23 @@ export interface Parcela {
   total: number;
 }
 
+export interface ItemHolerite {
+  descricao: string;
+  valor: number;
+}
+
 export interface Receita {
   id: string;
   descricao: string;
   valor: number;
   dia: number; // dia do mês (1 a 31)
   tipo: TipoReceita;
+  /** Preenchido quando a receita foi cadastrada pelo detalhamento do holerite.
+   *  `valor` acima já é o líquido (proventos - descontos). */
+  detalhe?: {
+    proventos: ItemHolerite[];
+    descontos: ItemHolerite[];
+  } | null;
 }
 
 export interface Despesa {
