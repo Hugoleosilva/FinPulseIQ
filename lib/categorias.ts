@@ -168,10 +168,13 @@ export const CATEGORIAS: CategoriaDef[] = [
     essencialidadePadrao: "essencial",
     ajuda: "Gastos com filhos e outros dependentes.",
     subcategorias: [
+      "Mensalidade escola",
       "Creche / babá",
+      "Material escolar",
       "Mesada",
       "Roupas das crianças",
       "Brinquedos",
+      "Atividades / esportes",
       "Pensão",
     ],
   },
