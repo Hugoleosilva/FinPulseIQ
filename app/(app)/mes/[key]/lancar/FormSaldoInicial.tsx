@@ -25,6 +25,12 @@ export function FormSaldoInicial({
         É quanto você tinha na conta (e no dinheiro) no primeiro dia do mês,
         antes de receber ou gastar qualquer coisa. Se não souber o valor exato,
         coloque uma estimativa. Pode ajustar depois.
+        <br />
+        <strong>
+          Se você começou o mês no vermelho (usando o cheque especial / limite),
+          coloque com o sinal de menos na frente
+        </strong>{" "}
+        — por exemplo, <code>-300,00</code>.
       </Aviso>
 
       <CampoTexto
@@ -32,10 +38,10 @@ export function FormSaldoInicial({
         name="saldoInicial"
         rotulo="Quanto você tinha no começo do mês?"
         prefixo="R$"
-        inputMode="decimal"
+        inputMode="text"
         placeholder="0,00"
         defaultValue={valorAtual ? String(valorAtual).replace(".", ",") : ""}
-        exemplo="800,00"
+        exemplo="800,00 (ou -300,00 se estava no vermelho)"
       />
 
       <div className="flex items-center gap-3">

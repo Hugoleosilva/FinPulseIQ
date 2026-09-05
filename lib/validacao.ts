@@ -1,22 +1,30 @@
 import { z } from "zod";
 import { NOMES_CATEGORIAS } from "./categorias";
 
+function limparDinheiro(v: unknown): unknown {
+  if (typeof v !== "string") return v;
+  const limpo = v
+    .trim()
+    .replace(/\s/g, "")
+    .replace(/^R\$/i, "")
+    .replace(/\./g, "")
+    .replace(",", ".");
+  if (limpo === "" || limpo === "-") return 0;
+  const n = Number(limpo);
+  return Number.isNaN(n) ? v : n;
+}
+
 const dinheiro = z.preprocess(
-  (v) => {
-    if (typeof v !== "string") return v;
-    const limpo = v
-      .trim()
-      .replace(/\s/g, "")
-      .replace(/^R\$/i, "")
-      .replace(/\./g, "")
-      .replace(",", ".");
-    if (limpo === "") return 0;
-    const n = Number(limpo);
-    return Number.isNaN(n) ? v : n;
-  },
+  limparDinheiro,
   z
     .number({ error: "Informe um valor em reais (ex.: 149,90)." })
     .nonnegative("O valor não pode ser negativo."),
+);
+
+/** Aceita valores negativos — para quem começa o mês no vermelho (cheque especial). */
+const dinheiroComSinal = z.preprocess(
+  limparDinheiro,
+  z.number({ error: "Informe um valor em reais (ex.: -300,00)." }),
 );
 
 const dia = z.preprocess(
@@ -84,7 +92,7 @@ export const despesaSchema = z.object({
 });
 
 export const saldoInicialSchema = z.object({
-  saldoInicial: dinheiro,
+  saldoInicial: dinheiroComSinal,
 });
 
 // --- Cartão ------------------------------------------------------------

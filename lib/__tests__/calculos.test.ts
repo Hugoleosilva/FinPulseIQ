@@ -137,6 +137,22 @@ describe("fluxoCaixa", () => {
   });
 });
 
+describe("saldo inicial negativo (cheque especial)", () => {
+  const noVermelho: Mes = {
+    ...mes,
+    saldoInicial: -300,
+  };
+
+  it("propaga o valor negativo para o saldo e o fluxo de caixa", () => {
+    const r = resumoMes(noVermelho);
+    expect(r.saldo).toBe(-300 + 5000 - 4700); // 0
+    const f = fluxoCaixa(noVermelho);
+    expect(f.dias[0].saldoAcumulado).toBeLessThanOrEqual(-300);
+    expect(f.menorSaldo).toBeLessThan(0);
+    expect(f.diasNegativos.length).toBeGreaterThan(0);
+  });
+});
+
 describe("nivelSaude", () => {
   it("classifica o cenário do enunciado como apertado", () => {
     const r = resumoMes(mes);
