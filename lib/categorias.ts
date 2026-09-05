@@ -223,6 +223,9 @@ export const CATEGORIAS: CategoriaDef[] = [
 
 export const NOMES_CATEGORIAS = CATEGORIAS.map((c) => c.nome);
 
+/** Categoria "guarda-chuva" da fatura do cartão não detalhada. */
+export const CATEGORIA_FATURA_CARTAO = "Fatura de cartão (sem detalhar)";
+
 export function getCategoria(nome: string): CategoriaDef | undefined {
   return CATEGORIAS.find((c) => c.nome === nome);
 }

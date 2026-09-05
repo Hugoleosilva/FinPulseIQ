@@ -3,7 +3,15 @@ import {
   getCategoria,
   emojiCategoria,
   PESO_ESSENCIALIDADE,
+  CATEGORIA_FATURA_CARTAO,
 } from "./categorias";
+
+/** Uma despesa "conta como cartão de crédito"? */
+function ehGastoCartao(d: Despesa): boolean {
+  return (
+    d.meioPagamento === "cartao" || d.categoria === CATEGORIA_FATURA_CARTAO
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Utilidades
@@ -49,6 +57,8 @@ export interface ResumoMes {
   despesasDesnecessarias: number;
   /** Gastos grandes que não fazem parte do mês normal (ex.: antecipar parcelas). */
   despesaExtraordinaria: number;
+  /** Parte dos extraordinários que caiu no cartão de crédito. */
+  despesaExtraordinariaCartao: number;
   porCategoria: LinhaCategoria[];
 }
 
@@ -68,7 +78,7 @@ export function resumoMes(mes: Mes): ResumoMes {
   const saldo = mes.saldoInicial + receitaTotal - despesaTotal;
 
   const gastoCartao = soma(
-    mes.despesas.filter((d) => d.meioPagamento === "cartao").map((d) => d.valor),
+    mes.despesas.filter(ehGastoCartao).map((d) => d.valor),
   );
 
   const porEssencialidade = (e: Essencialidade) =>
@@ -121,6 +131,11 @@ export function resumoMes(mes: Mes): ResumoMes {
         .filter((d) => d.natureza === "extraordinaria")
         .map((d) => d.valor),
     ),
+    despesaExtraordinariaCartao: soma(
+      mes.despesas
+        .filter((d) => d.natureza === "extraordinaria" && ehGastoCartao(d))
+        .map((d) => d.valor),
+    ),
     porCategoria,
   };
 }
@@ -133,12 +148,16 @@ export function resumoSemExtraordinarios(r: ResumoMes): ResumoMes {
   if (r.despesaExtraordinaria <= 0) return r;
   const despesaTotal = r.despesaTotal - r.despesaExtraordinaria;
   const saldo = r.saldoInicial + r.receitaTotal - despesaTotal;
+  const gastoCartao = Math.max(0, r.gastoCartao - r.despesaExtraordinariaCartao);
   return {
     ...r,
     despesaTotal,
     saldo,
     taxaPoupanca: r.receitaTotal > 0 ? saldo / r.receitaTotal : 0,
+    gastoCartao,
+    comprometimentoCartao: r.receitaTotal > 0 ? gastoCartao / r.receitaTotal : 0,
     despesaExtraordinaria: 0,
+    despesaExtraordinariaCartao: 0,
   };
 }
 
@@ -454,9 +473,15 @@ export function nivelSaude({
       valor: pct(resumo.comprometimentoCartao),
       nota: notaCartao,
       comentario:
-        resumo.comprometimentoCartao > 0.4
-          ? "Fatia alta da renda vai para o cartão."
-          : "Uso do cartão sob controle.",
+        resumo.gastoCartao <= 0
+          ? "Sem gasto no cartão de crédito neste mês."
+          : resumo.comprometimentoCartao >= 1
+            ? "A fatura do cartão passou da sua renda do mês."
+            : resumo.comprometimentoCartao > 0.6
+              ? "Fatia altíssima da renda vai para o cartão."
+              : resumo.comprometimentoCartao > 0.35
+                ? "Fatia alta da renda vai para o cartão."
+                : "Uso do cartão sob controle.",
     },
     {
       rotulo: "Parcelas para os próximos meses",

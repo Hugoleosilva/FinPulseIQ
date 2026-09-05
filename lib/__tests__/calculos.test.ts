@@ -65,8 +65,25 @@ describe("resumoMes", () => {
   });
 
   it("identifica o comprometimento com cartão", () => {
+    // 900 na categoria "Fatura de cartão" conta mesmo pago por outro meio
     expect(r.gastoCartao).toBe(900);
     expect(r.comprometimentoCartao).toBeCloseTo(0.18, 2);
+  });
+
+  it("conta a fatura do cartão mesmo quando o meio de pagamento é boleto", () => {
+    const so = resumoMes({
+      ...mes,
+      despesas: [
+        d({
+          categoria: "Fatura de cartão (sem detalhar)",
+          subcategoria: "Fatura do mês",
+          valor: 2000,
+          meioPagamento: "boleto",
+          essencialidade: "reduzivel",
+        }),
+      ],
+    });
+    expect(so.gastoCartao).toBe(2000);
   });
 
   it("separa essenciais de não essenciais", () => {
