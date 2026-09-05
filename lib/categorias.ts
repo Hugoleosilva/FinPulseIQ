@@ -169,13 +169,16 @@ export const CATEGORIAS: CategoriaDef[] = [
     ajuda: "Gastos com filhos e outros dependentes.",
     subcategorias: [
       "Mensalidade escola",
-      "Creche / babá",
       "Material escolar",
+      "Fardamento / uniforme escolar",
+      "Passeios e excursões escolares",
+      "Atividades extracurriculares (reforço, música, esporte)",
+      "Creche / babá",
       "Mesada",
       "Roupas das crianças",
       "Brinquedos",
-      "Atividades / esportes",
       "Pensão",
+      "Outros",
     ],
   },
   {
