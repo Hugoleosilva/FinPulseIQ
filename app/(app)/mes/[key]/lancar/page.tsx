@@ -3,16 +3,15 @@ import type { Metadata } from "next";
 import { exigirSessao } from "@/lib/dal";
 import { getMes, listarCartoes } from "@/lib/repo";
 import { keyValida, nomeMes, formatBRL, deslocaMes } from "@/lib/format";
-import { emojiCategoria, ROTULO_ESSENCIALIDADE } from "@/lib/categorias";
-import { removerReceita, removerDespesa } from "@/app/actions/lancamentos";
 import { Card, Aviso } from "@/components/ui";
-import { BotaoExcluir } from "@/components/BotaoExcluir";
 import { WizardLancamento, type PassoWizard } from "./WizardLancamento";
 import { FormSaldoInicial } from "./FormSaldoInicial";
 import { FormReceita } from "./FormReceita";
 import { FormSalario } from "./FormSalario";
 import { FormDespesa } from "./FormDespesa";
 import { CopiarMesAnterior } from "./CopiarMesAnterior";
+import { ListaReceitas } from "./ListaReceitas";
+import { ListaDespesas } from "./ListaDespesas";
 
 export const metadata: Metadata = { title: "Preencher o mês — FinPulseIQ" };
 
@@ -35,7 +34,7 @@ export default async function PaginaLancar({
     (r) => r.tipo === "fixa",
   ).length;
   const despesasRecorrentesAnt = mesAnterior.despesas.filter(
-    (d) => d.recorrente,
+    (d) => d.natureza === "fixa" || d.natureza === "parcelada",
   ).length;
 
   const totalReceitas = mes.receitas.reduce((a, r) => a + r.valor, 0);
@@ -74,9 +73,7 @@ export default async function PaginaLancar({
           </div>
 
           <div>
-            <h3 className="mb-2 text-lg font-bold">
-              Outras receitas
-            </h3>
+            <h3 className="mb-2 text-lg font-bold">Outras receitas</h3>
             <p className="mb-3 text-sm text-texto-suave">
               Bicos, aluguel que você recebe, pensão, ajuda de familiares,
               vendas, rendimentos.
@@ -112,7 +109,11 @@ export default async function PaginaLancar({
             </Aviso>
           ) : null}
           <FormDespesa chaveMes={key} cartoes={cartoes} />
-          <ListaDespesas chaveMes={key} despesas={mes.despesas} />
+          <ListaDespesas
+            chaveMes={key}
+            despesas={mes.despesas}
+            cartoes={cartoes}
+          />
         </div>
       ),
     },
@@ -122,7 +123,10 @@ export default async function PaginaLancar({
       conteudo: (
         <Card>
           <dl className="grid gap-3 sm:grid-cols-2">
-            <Linha rotulo="Você tinha no começo" valor={formatBRL(mes.saldoInicial)} />
+            <Linha
+              rotulo="Você tinha no começo"
+              valor={formatBRL(mes.saldoInicial)}
+            />
             <Linha rotulo="Entrou no mês" valor={formatBRL(totalReceitas)} />
             <Linha rotulo="Saiu no mês" valor={formatBRL(totalDespesas)} />
             <Linha
@@ -168,114 +172,5 @@ function Linha({
         {valor}
       </dd>
     </div>
-  );
-}
-
-function ListaReceitas({
-  chaveMes,
-  receitas,
-}: {
-  chaveMes: string;
-  receitas: import("@/lib/tipos").Receita[];
-}) {
-  if (receitas.length === 0) {
-    return (
-      <p className="text-sm text-texto-suave">
-        Nenhuma receita cadastrada ainda.
-      </p>
-    );
-  }
-  return (
-    <ul className="divide-y divide-borda rounded-xl border border-borda">
-      {receitas.map((r) => (
-        <li key={r.id} className="p-3">
-          <div className="flex items-center justify-between gap-3">
-            <span>
-              <span className="font-semibold">{r.descricao}</span>
-              <span className="block text-sm text-texto-suave">dia {r.dia}</span>
-            </span>
-            <span className="flex items-center gap-2">
-              <span className="tabular font-bold text-ok">
-                {formatBRL(r.valor)}
-              </span>
-              <BotaoExcluir
-                acao={removerReceita.bind(null, chaveMes, r.id)}
-                confirmar={`Apagar a receita "${r.descricao}"?`}
-              />
-            </span>
-          </div>
-          {r.detalhe &&
-          (r.detalhe.proventos.length || r.detalhe.descontos.length) ? (
-            <details className="mt-2 text-sm text-texto-suave">
-              <summary className="cursor-pointer">Ver detalhamento</summary>
-              <div className="mt-1 grid gap-1 pl-3">
-                {r.detalhe.proventos.map((p, i) => (
-                  <span key={`p${i}`}>
-                    + {p.descricao}: {formatBRL(p.valor)}
-                  </span>
-                ))}
-                {r.detalhe.descontos.map((d, i) => (
-                  <span key={`d${i}`} className="text-alerta">
-                    − {d.descricao}: {formatBRL(d.valor)}
-                  </span>
-                ))}
-              </div>
-            </details>
-          ) : null}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function ListaDespesas({
-  chaveMes,
-  despesas,
-}: {
-  chaveMes: string;
-  despesas: {
-    id: string;
-    descricao: string;
-    valor: number;
-    dia: number;
-    categoria: string;
-    subcategoria: string;
-    essencialidade: "essencial" | "reduzivel" | "desnecessario";
-    parcela?: { atual: number; total: number } | null;
-  }[];
-}) {
-  if (despesas.length === 0) {
-    return (
-      <p className="text-sm text-texto-suave">Nenhum gasto cadastrado ainda.</p>
-    );
-  }
-  return (
-    <ul className="divide-y divide-borda rounded-xl border border-borda">
-      {despesas.map((d) => (
-        <li key={d.id} className="flex items-center justify-between gap-3 p-3">
-          <span>
-            <span className="font-semibold">
-              {emojiCategoria(d.categoria)} {d.descricao}
-            </span>
-            <span className="block text-sm text-texto-suave">
-              {d.categoria} · {d.subcategoria} ·{" "}
-              {ROTULO_ESSENCIALIDADE[d.essencialidade]}
-              {d.parcela
-                ? ` · parcela ${d.parcela.atual}/${d.parcela.total}`
-                : ""}
-            </span>
-          </span>
-          <span className="flex items-center gap-2">
-            <span className="tabular font-bold text-texto">
-              {formatBRL(d.valor)}
-            </span>
-            <BotaoExcluir
-              acao={removerDespesa.bind(null, chaveMes, d.id)}
-              confirmar={`Apagar o gasto "${d.descricao}"?`}
-            />
-          </span>
-        </li>
-      ))}
-    </ul>
   );
 }

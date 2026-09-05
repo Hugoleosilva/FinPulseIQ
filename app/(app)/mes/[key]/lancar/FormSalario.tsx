@@ -1,14 +1,16 @@
 "use client";
 
-import { useActionState, useMemo, useState, useTransition } from "react";
+import { useActionState, useEffect, useMemo, useState, useTransition } from "react";
 import {
   adicionarSalario,
+  editarSalario,
   analisarHolerite,
 } from "@/app/actions/lancamentos";
 import { CampoTexto } from "@/components/campos";
 import { Botao, Aviso } from "@/components/ui";
 import { formatBRL } from "@/lib/format";
 import type { EstadoForm } from "@/lib/forms";
+import type { Receita } from "@/lib/tipos";
 
 interface Linha {
   descricao: string;
@@ -27,17 +29,42 @@ const fmtInput = (n: number) =>
     ? n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     : "";
 
-export function FormSalario({ chaveMes }: { chaveMes: string }) {
-  const salvar = adicionarSalario.bind(null, chaveMes);
+export function FormSalario({
+  chaveMes,
+  receitaInicial,
+  aoConcluir,
+}: {
+  chaveMes: string;
+  receitaInicial?: Receita;
+  aoConcluir?: () => void;
+}) {
+  const editando = !!receitaInicial;
+  const salvar = editando
+    ? editarSalario.bind(null, chaveMes, receitaInicial!.id)
+    : adicionarSalario.bind(null, chaveMes);
   const [estado, formAction, salvando] = useActionState<EstadoForm, FormData>(
     salvar,
     null,
   );
 
-  const [proventos, setProventos] = useState<Linha[]>([
-    { descricao: "Salário", valor: "" },
-  ]);
-  const [descontos, setDescontos] = useState<Linha[]>([]);
+  useEffect(() => {
+    if (estado?.ok && editando) aoConcluir?.();
+  }, [estado, editando, aoConcluir]);
+
+  const [proventos, setProventos] = useState<Linha[]>(
+    receitaInicial?.detalhe?.proventos.length
+      ? receitaInicial.detalhe.proventos.map((i) => ({
+          descricao: i.descricao,
+          valor: fmtInput(i.valor),
+        }))
+      : [{ descricao: "Salário", valor: "" }],
+  );
+  const [descontos, setDescontos] = useState<Linha[]>(
+    receitaInicial?.detalhe?.descontos.map((i) => ({
+      descricao: i.descricao,
+      valor: fmtInput(i.valor),
+    })) ?? [],
+  );
   const [analisando, startAnalise] = useTransition();
   const [msgAnalise, setMsgAnalise] = useState<string | null>(null);
   const [liquidoImpresso, setLiquidoImpresso] = useState<number | null>(null);
@@ -174,7 +201,10 @@ export function FormSalario({ chaveMes }: { chaveMes: string }) {
             id="sal-descricao"
             name="descricao"
             rotulo="Nome dessa receita"
-            defaultValue="Salário"
+            defaultValue={
+              receitaInicial?.descricao.replace(/\s*\(líquido\)\s*$/, "") ||
+              "Salário"
+            }
           />
           <CampoTexto
             id="sal-dia"
@@ -183,7 +213,7 @@ export function FormSalario({ chaveMes }: { chaveMes: string }) {
             type="number"
             min={1}
             max={31}
-            defaultValue={5}
+            defaultValue={receitaInicial?.dia ?? 5}
           />
         </div>
 
@@ -201,10 +231,19 @@ export function FormSalario({ chaveMes }: { chaveMes: string }) {
           <input key={`dv${i}`} type="hidden" name="descontoValor" value={l.valor} readOnly />
         ))}
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <Botao type="submit" disabled={salvando}>
-            {salvando ? "Salvando..." : "Registrar salário"}
+            {salvando
+              ? "Salvando..."
+              : editando
+                ? "Salvar alterações"
+                : "Registrar salário"}
           </Botao>
+          {editando && aoConcluir ? (
+            <Botao type="button" variante="fantasma" onClick={aoConcluir}>
+              Cancelar
+            </Botao>
+          ) : null}
           {estado?.ok ? (
             <span className="text-sm font-semibold text-ok">
               {estado.mensagem}

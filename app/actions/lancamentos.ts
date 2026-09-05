@@ -60,6 +60,33 @@ export async function adicionarReceita(
   return { ok: true, mensagem: "Receita adicionada." };
 }
 
+export async function editarReceita(
+  key: string,
+  id: string,
+  _prev: EstadoForm,
+  formData: FormData,
+): Promise<EstadoForm> {
+  const { userId } = await exigirSessao();
+  const parsed = receitaSchema.safeParse({
+    descricao: formData.get("descricao"),
+    valor: formData.get("valor"),
+    dia: formData.get("dia"),
+    tipo: formData.get("tipo"),
+  });
+  if (!parsed.success) {
+    return { ok: false, campos: camposDeErro(parsed.error) };
+  }
+  const mes = await getMes(userId, key);
+  const alvo = mes.receitas.find((r) => r.id === id);
+  if (!alvo) return { ok: false, erro: "Receita não encontrada." };
+  const receitas = mes.receitas.map((r) =>
+    r.id === id ? { ...r, ...parsed.data, detalhe: null } : r,
+  );
+  await salvarMes(userId, key, { receitas });
+  revalida(key);
+  return { ok: true, mensagem: "Receita atualizada." };
+}
+
 export type EstadoHolerite =
   | { ok: true; dados: HoleriteLido }
   | { ok: false; erro: string };
@@ -117,18 +144,17 @@ function lerItens(
   return out;
 }
 
-export async function adicionarSalario(
-  key: string,
-  _prev: EstadoForm,
+function montarSalario(
   formData: FormData,
-): Promise<EstadoForm> {
-  const { userId } = await exigirSessao();
-
+): { ok: true; receita: Omit<Receita, "id"> } | { ok: false; estado: EstadoForm } {
   const proventos = lerItens(formData, "provento");
   const descontos = lerItens(formData, "desconto");
 
   if (proventos.length === 0) {
-    return { ok: false, erro: "Informe pelo menos um provento (o salário)." };
+    return {
+      ok: false,
+      estado: { ok: false, erro: "Informe pelo menos um provento (o salário)." },
+    };
   }
 
   const somaProventos = proventos.reduce((a, i) => a + i.valor, 0);
@@ -138,26 +164,66 @@ export async function adicionarSalario(
   if (liquido <= 0) {
     return {
       ok: false,
-      erro: "Os descontos ficaram maiores que os proventos. Confira os valores.",
+      estado: {
+        ok: false,
+        erro:
+          "Os descontos ficaram maiores que os proventos. Confira os valores.",
+      },
     };
   }
 
   const dia = Number(formData.get("dia")) || 5;
-  const descricao = String(formData.get("descricao") || "").trim() || "Salário";
+  const nome = String(formData.get("descricao") || "").trim() || "Salário";
 
-  const nova: Receita = {
-    id: randomUUID(),
-    descricao: `${descricao} (líquido)`,
-    valor: liquido,
-    dia: Math.min(31, Math.max(1, dia)),
-    tipo: "fixa",
-    detalhe: { proventos, descontos },
+  return {
+    ok: true,
+    receita: {
+      descricao: nome.endsWith("(líquido)") ? nome : `${nome} (líquido)`,
+      valor: liquido,
+      dia: Math.min(31, Math.max(1, dia)),
+      tipo: "fixa",
+      detalhe: { proventos, descontos },
+    },
   };
+}
+
+export async function adicionarSalario(
+  key: string,
+  _prev: EstadoForm,
+  formData: FormData,
+): Promise<EstadoForm> {
+  const { userId } = await exigirSessao();
+  const res = montarSalario(formData);
+  if (!res.ok) return res.estado;
 
   const mes = await getMes(userId, key);
-  await salvarMes(userId, key, { receitas: [...mes.receitas, nova] });
+  await salvarMes(userId, key, {
+    receitas: [...mes.receitas, { id: randomUUID(), ...res.receita }],
+  });
   revalida(key);
   return { ok: true, mensagem: "Salário registrado." };
+}
+
+export async function editarSalario(
+  key: string,
+  id: string,
+  _prev: EstadoForm,
+  formData: FormData,
+): Promise<EstadoForm> {
+  const { userId } = await exigirSessao();
+  const res = montarSalario(formData);
+  if (!res.ok) return res.estado;
+
+  const mes = await getMes(userId, key);
+  if (!mes.receitas.some((r) => r.id === id)) {
+    return { ok: false, erro: "Receita não encontrada." };
+  }
+  const receitas = mes.receitas.map((r) =>
+    r.id === id ? { id, ...res.receita } : r,
+  );
+  await salvarMes(userId, key, { receitas });
+  revalida(key);
+  return { ok: true, mensagem: "Salário atualizado." };
 }
 
 export type EstadoCopia =
@@ -243,12 +309,11 @@ export async function removerReceita(key: string, id: string): Promise<void> {
   revalida(key);
 }
 
-export async function adicionarDespesa(
-  key: string,
-  _prev: EstadoForm,
+function camposDaDespesa(
   formData: FormData,
-): Promise<EstadoForm> {
-  const { userId } = await exigirSessao();
+):
+  | { ok: true; campos: Omit<Despesa, "id"> }
+  | { ok: false; estado: EstadoForm } {
   const parsed = despesaSchema.safeParse({
     descricao: formData.get("descricao"),
     valor: formData.get("valor"),
@@ -263,9 +328,8 @@ export async function adicionarDespesa(
     parcelaTotal: formData.get("parcelaTotal") || undefined,
   });
   if (!parsed.success) {
-    return { ok: false, campos: camposDeErro(parsed.error) };
+    return { ok: false, estado: { ok: false, campos: camposDeErro(parsed.error) } };
   }
-
   const d = parsed.data;
 
   let parcela: Despesa["parcela"] = null;
@@ -279,28 +343,63 @@ export async function adicionarDespesa(
   ) {
     parcela = { atual: d.parcelaAtual, total: d.parcelaTotal };
   }
-  // "parcelada" sem números válidos vira gasto normal
   const natureza =
     d.natureza === "parcelada" && !parcela ? "normal" : d.natureza;
 
-  const mes = await getMes(userId, key);
-  const nova: Despesa = {
-    id: randomUUID(),
-    descricao: d.descricao,
-    valor: d.valor,
-    dia: d.dia,
-    categoria: d.categoria,
-    subcategoria: d.subcategoria,
-    meioPagamento: d.meioPagamento,
-    cartaoId: d.meioPagamento === "cartao" ? d.cartaoId ?? null : null,
-    essencialidade: d.essencialidade,
-    natureza,
-    recorrente: natureza === "fixa",
-    parcela,
+  return {
+    ok: true,
+    campos: {
+      descricao: d.descricao,
+      valor: d.valor,
+      dia: d.dia,
+      categoria: d.categoria,
+      subcategoria: d.subcategoria,
+      meioPagamento: d.meioPagamento,
+      cartaoId: d.meioPagamento === "cartao" ? d.cartaoId ?? null : null,
+      essencialidade: d.essencialidade,
+      natureza,
+      recorrente: natureza === "fixa",
+      parcela,
+    },
   };
+}
+
+export async function adicionarDespesa(
+  key: string,
+  _prev: EstadoForm,
+  formData: FormData,
+): Promise<EstadoForm> {
+  const { userId } = await exigirSessao();
+  const res = camposDaDespesa(formData);
+  if (!res.ok) return res.estado;
+
+  const mes = await getMes(userId, key);
+  const nova: Despesa = { id: randomUUID(), ...res.campos };
   await salvarMes(userId, key, { despesas: [...mes.despesas, nova] });
   revalida(key);
   return { ok: true, mensagem: "Gasto adicionado." };
+}
+
+export async function editarDespesa(
+  key: string,
+  id: string,
+  _prev: EstadoForm,
+  formData: FormData,
+): Promise<EstadoForm> {
+  const { userId } = await exigirSessao();
+  const res = camposDaDespesa(formData);
+  if (!res.ok) return res.estado;
+
+  const mes = await getMes(userId, key);
+  if (!mes.despesas.some((x) => x.id === id)) {
+    return { ok: false, erro: "Gasto não encontrado." };
+  }
+  const despesas = mes.despesas.map((x) =>
+    x.id === id ? { id, ...res.campos } : x,
+  );
+  await salvarMes(userId, key, { despesas });
+  revalida(key);
+  return { ok: true, mensagem: "Gasto atualizado." };
 }
 
 export async function removerDespesa(key: string, id: string): Promise<void> {
