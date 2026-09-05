@@ -10,6 +10,7 @@ import {
   saldoInicialSchema,
 } from "@/lib/validacao";
 import { camposDeErro, primeiroErroGeral, type EstadoForm } from "@/lib/forms";
+import { deslocaMes } from "@/lib/format";
 import { lerHoleritePDF, type HoleriteLido } from "@/lib/holerite";
 import type { Despesa, Receita, ItemHolerite } from "@/lib/tipos";
 
@@ -157,6 +158,74 @@ export async function adicionarSalario(
   await salvarMes(userId, key, { receitas: [...mes.receitas, nova] });
   revalida(key);
   return { ok: true, mensagem: "Salário registrado." };
+}
+
+export type EstadoCopia =
+  | { ok: true; receitas: number; despesas: number }
+  | { ok: false; erro: string }
+  | null;
+
+/** Copia receitas fixas e despesas recorrentes do mês anterior para este mês. */
+export async function copiarRecorrentes(
+  key: string,
+): Promise<EstadoCopia> {
+  const { userId } = await exigirSessao();
+  const anterior = deslocaMes(key, -1);
+
+  const [mes, mesAnt] = await Promise.all([
+    getMes(userId, key),
+    getMes(userId, anterior),
+  ]);
+
+  const existeReceita = (r: Receita) =>
+    mes.receitas.some(
+      (x) =>
+        x.descricao.trim().toLowerCase() === r.descricao.trim().toLowerCase() &&
+        Math.abs(x.valor - r.valor) < 0.01,
+    );
+  const existeDespesa = (d: Despesa) =>
+    mes.despesas.some(
+      (x) =>
+        x.descricao.trim().toLowerCase() === d.descricao.trim().toLowerCase() &&
+        x.categoria === d.categoria &&
+        Math.abs(x.valor - d.valor) < 0.01,
+    );
+
+  const novasReceitas = mesAnt.receitas
+    .filter((r) => r.tipo === "fixa" && !existeReceita(r))
+    .map((r) => ({ ...r, id: randomUUID() }));
+
+  const novasDespesas = mesAnt.despesas
+    .filter((d) => d.recorrente && !existeDespesa(d))
+    .map((d) => ({
+      ...d,
+      id: randomUUID(),
+      // parcela avança um mês, se houver
+      parcela: d.parcela
+        ? {
+            atual: Math.min(d.parcela.total, d.parcela.atual + 1),
+            total: d.parcela.total,
+          }
+        : null,
+    }));
+
+  if (novasReceitas.length === 0 && novasDespesas.length === 0) {
+    return {
+      ok: false,
+      erro: "Não há nada novo para copiar do mês anterior.",
+    };
+  }
+
+  await salvarMes(userId, key, {
+    receitas: [...mes.receitas, ...novasReceitas],
+    despesas: [...mes.despesas, ...novasDespesas],
+  });
+  revalida(key);
+  return {
+    ok: true,
+    receitas: novasReceitas.length,
+    despesas: novasDespesas.length,
+  };
 }
 
 export async function removerReceita(key: string, id: string): Promise<void> {

@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { exigirSessao } from "@/lib/dal";
 import { getMes, listarCartoes } from "@/lib/repo";
-import { keyValida, nomeMes, formatBRL } from "@/lib/format";
+import { keyValida, nomeMes, formatBRL, deslocaMes } from "@/lib/format";
 import { emojiCategoria, ROTULO_ESSENCIALIDADE } from "@/lib/categorias";
 import { removerReceita, removerDespesa } from "@/app/actions/lancamentos";
 import { Card, Aviso } from "@/components/ui";
@@ -12,6 +12,7 @@ import { FormSaldoInicial } from "./FormSaldoInicial";
 import { FormReceita } from "./FormReceita";
 import { FormSalario } from "./FormSalario";
 import { FormDespesa } from "./FormDespesa";
+import { CopiarMesAnterior } from "./CopiarMesAnterior";
 
 export const metadata: Metadata = { title: "Preencher o mês — FinPulseIQ" };
 
@@ -24,10 +25,18 @@ export default async function PaginaLancar({
   if (!keyValida(key)) notFound();
 
   const { userId } = await exigirSessao();
-  const [mes, cartoes] = await Promise.all([
+  const [mes, cartoes, mesAnterior] = await Promise.all([
     getMes(userId, key),
     listarCartoes(userId),
+    getMes(userId, deslocaMes(key, -1)),
   ]);
+
+  const receitasFixasAnt = mesAnterior.receitas.filter(
+    (r) => r.tipo === "fixa",
+  ).length;
+  const despesasRecorrentesAnt = mesAnterior.despesas.filter(
+    (d) => d.recorrente,
+  ).length;
 
   const totalReceitas = mes.receitas.reduce((a, r) => a + r.valor, 0);
   const totalDespesas = mes.despesas.reduce((a, d) => a + d.valor, 0);
@@ -47,6 +56,12 @@ export default async function PaginaLancar({
         "Cadastre tudo o que você recebe no mês: salário, bicos, ajuda, aluguel que recebe.",
       conteudo: (
         <div className="flex flex-col gap-6">
+          <CopiarMesAnterior
+            chaveMes={key}
+            nomeAnterior={nomeMes(deslocaMes(key, -1))}
+            qtdReceitasFixas={receitasFixasAnt}
+            qtdDespesasRecorrentes={despesasRecorrentesAnt}
+          />
           <div>
             <h3 className="mb-2 text-lg font-bold">Seu salário</h3>
             <p className="mb-3 text-sm text-texto-suave">
