@@ -8,6 +8,8 @@ import {
   simular,
   nivelSaude,
   resumoSemExtraordinarios,
+  parcelasFuturasDoMes,
+  somarCompromissoFuturo,
 } from "../calculos";
 
 function d(p: Partial<Despesa>): Despesa {
@@ -200,6 +202,57 @@ describe("gastos extraordinários", () => {
   });
 });
 
+describe("empréstimos e parcelas futuras", () => {
+  const comEmprestimo: Mes = {
+    ...mes,
+    despesas: [
+      ...mes.despesas,
+      d({
+        categoria: "Empréstimos e financiamentos",
+        subcategoria: "Consórcio",
+        descricao: "Consórcio da casa",
+        valor: 1285,
+        essencialidade: "essencial",
+        natureza: "parcelada",
+        parcela: { atual: 2, total: 48 },
+        meioPagamento: "pix",
+      }),
+    ],
+  };
+
+  it("mede o comprometimento com empréstimo separado do cartão", () => {
+    const r = resumoMes(comEmprestimo);
+    expect(r.gastoEmprestimo).toBe(1285);
+    expect(r.comprometimentoEmprestimo).toBeCloseTo(1285 / 5000, 3);
+    expect(r.gastoCartao).toBe(900); // fatura do cenário base, sem o consórcio
+  });
+
+  it("a parcela em andamento entra no compromisso futuro, na conta de empréstimo", () => {
+    const parcelas = parcelasFuturasDoMes(comEmprestimo);
+    const consorcio = parcelas.find((p) => p.descricao.includes("Consórcio"));
+    expect(consorcio?.tipo).toBe("emprestimo");
+    expect(consorcio?.parcelasRestantes).toBe(46);
+
+    const total = somarCompromissoFuturo(
+      parcelas.map((p) => ({
+        valorMensal: p.valorMensal,
+        tipo: p.tipo,
+        ativo: true,
+      })),
+    );
+    expect(total.emprestimo).toBe(1285);
+    expect(total.mensal).toBe(1285);
+  });
+
+  it("empréstimo não é sugerido como vazamento", () => {
+    const ops = oportunidades(comEmprestimo);
+    const emp = ops.find(
+      (o) => o.categoria === "Empréstimos e financiamentos",
+    );
+    expect(emp?.potencial ?? 0).toBe(0);
+  });
+});
+
 describe("saldo inicial negativo (cheque especial)", () => {
   const noVermelho: Mes = {
     ...mes,
@@ -224,6 +277,6 @@ describe("nivelSaude", () => {
     expect(n.score).toBeGreaterThan(0);
     expect(n.score).toBeLessThan(65);
     expect(["normal", "ruim", "critico"]).toContain(n.faixa);
-    expect(n.componentes).toHaveLength(5);
+    expect(n.componentes).toHaveLength(6);
   });
 });

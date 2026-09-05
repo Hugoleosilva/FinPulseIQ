@@ -155,10 +155,28 @@ export const CATEGORIAS: CategoriaDef[] = [
     subcategorias: [
       "Telefone / celular",
       "Seguro de vida",
-      "Empréstimo / consórcio",
       "Taxas bancárias",
       "Impostos",
       "Contador / advogado",
+    ],
+  },
+  {
+    nome: "Empréstimos e financiamentos",
+    emoji: "🏦",
+    tetoReducao: 0.05,
+    essencialidadePadrao: "essencial",
+    ajuda:
+      "Dívidas que você paga em parcelas: empréstimo, consórcio, financiamento do carro ou da casa, consignado. Marque como 'compra parcelada' e informe quantas parcelas faltam.",
+    subcategorias: [
+      "Empréstimo pessoal",
+      "Crédito consignado",
+      "Consórcio",
+      "Financiamento de veículo",
+      "Financiamento imobiliário",
+      "Cheque especial (juros)",
+      "Juros do cartão / rotativo",
+      "FIES / crédito estudantil",
+      "Outros",
     ],
   },
   {
@@ -225,6 +243,9 @@ export const NOMES_CATEGORIAS = CATEGORIAS.map((c) => c.nome);
 
 /** Categoria "guarda-chuva" da fatura do cartão não detalhada. */
 export const CATEGORIA_FATURA_CARTAO = "Fatura de cartão (sem detalhar)";
+
+/** Categoria de dívidas com parcelas (empréstimo, consórcio, financiamento). */
+export const CATEGORIA_EMPRESTIMOS = "Empréstimos e financiamentos";
 
 export function getCategoria(nome: string): CategoriaDef | undefined {
   return CATEGORIAS.find((c) => c.nome === nome);

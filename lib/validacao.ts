@@ -90,8 +90,8 @@ export const despesaSchema = z.object({
   natureza: z
     .enum(["normal", "fixa", "parcelada", "extraordinaria"])
     .default("normal"),
-  parcelaAtual: z.coerce.number().int().min(0).max(360).optional(),
-  parcelaTotal: z.coerce.number().int().min(0).max(360).optional(),
+  parcelaAtual: z.coerce.number().int().min(0).max(420).optional(),
+  parcelaTotal: z.coerce.number().int().min(0).max(420).optional(),
 });
 
 export const saldoInicialSchema = z.object({
@@ -119,7 +119,7 @@ export const compromissoSchema = z.object({
     .number()
     .int()
     .min(1, "Quantas parcelas ainda faltam?")
-    .max(360),
+    .max(420),
   categoria: z.enum(NOMES_CATEGORIAS as [string, ...string[]]),
   cartaoId: z.string().optional().nullable(),
 });

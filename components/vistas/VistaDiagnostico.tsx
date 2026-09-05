@@ -155,29 +155,43 @@ export async function VistaDiagnostico(props: VistaDiagnosticoProps) {
           </Card>
 
           <Card>
-            <TituloSecao ajuda="Quanto da renda já está prometido.">
-              4. Cartões e parcelas
+            <TituloSecao ajuda="Quanto da renda já está prometido, e o que continua pesando nos próximos meses.">
+              4. Dívidas: cartão, empréstimos e parcelas
             </TituloSecao>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-3">
               <div className="rounded-xl border border-borda p-3">
                 <p className="text-sm text-texto-suave">
-                  Comprometido com cartão de crédito este mês
+                  Cartão de crédito neste mês
                 </p>
                 <p className="tabular text-2xl font-extrabold">
                   {formatPct(resumo.comprometimentoCartao)}
                 </p>
                 <p className="text-sm text-texto-suave">
-                  {formatBRL(resumo.gastoCartao)} de{" "}
-                  {formatBRL(resumo.receitaTotal)}
+                  {formatBRL(resumo.gastoCartao)} da renda
                 </p>
               </div>
               <div className="rounded-xl border border-borda p-3">
                 <p className="text-sm text-texto-suave">
-                  Parcelas que continuam nos próximos meses
+                  Empréstimos e financiamentos
                 </p>
                 <p className="tabular text-2xl font-extrabold">
-                  {formatBRL(dados.compromissoMensalFuturo)}
+                  {formatPct(resumo.comprometimentoEmprestimo)}
+                </p>
+                <p className="text-sm text-texto-suave">
+                  {formatBRL(resumo.gastoEmprestimo)} da renda
+                </p>
+              </div>
+              <div className="rounded-xl border border-borda p-3">
+                <p className="text-sm text-texto-suave">
+                  Já comprometido nos próximos meses
+                </p>
+                <p className="tabular text-2xl font-extrabold">
+                  {formatBRL(dados.compromissoFuturo.mensal)}
                   <span className="text-base font-semibold">/mês</span>
+                </p>
+                <p className="text-sm text-texto-suave">
+                  {formatBRL(dados.compromissoFuturo.cartao)} cartão ·{" "}
+                  {formatBRL(dados.compromissoFuturo.emprestimo)} empréstimo
                 </p>
               </div>
             </div>
@@ -186,7 +200,8 @@ export async function VistaDiagnostico(props: VistaDiagnosticoProps) {
                 {dados.parcelasFuturas.map((p) => (
                   <li key={p.descricao}>
                     • {p.descricao}: {formatBRL(p.valorMensal)}/mês por mais{" "}
-                    {p.parcelasRestantes} mês(es)
+                    {p.parcelasRestantes} mês(es) ({formatBRL(p.totalRestante)}{" "}
+                    no total)
                   </li>
                 ))}
               </ul>

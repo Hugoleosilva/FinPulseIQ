@@ -247,7 +247,7 @@ export function FormDespesa({
               rotulo="Qual parcela é esta?"
               type="number"
               min={1}
-              max={360}
+              max={420}
               defaultValue={despesaInicial?.parcela?.atual ?? 1}
               exemplo="Se é a 2ª de 10, escreva 2"
             />
@@ -257,7 +257,7 @@ export function FormDespesa({
               rotulo="Total de parcelas"
               type="number"
               min={2}
-              max={360}
+              max={420}
               defaultValue={despesaInicial?.parcela?.total ?? 10}
               exemplo="10"
             />

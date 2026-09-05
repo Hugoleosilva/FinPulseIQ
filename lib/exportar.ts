@@ -6,6 +6,7 @@ import type {
   NivelSaude,
   FluxoCaixa,
   ParcelaFutura,
+  CompromissoFuturoTotal,
   PontoHistorico,
 } from "./calculos";
 
@@ -18,6 +19,7 @@ export interface DadosDiagnostico {
   oportunidades: Oportunidade[];
   parcelasFuturas: ParcelaFutura[];
   compromissoMensalFuturo: number;
+  compromissoFuturo: CompromissoFuturoTotal;
   historico: PontoHistorico[];
 }
 
@@ -118,13 +120,19 @@ export function gerarDiagnosticoMarkdown(d: DadosDiagnostico): string {
   }
   add();
 
-  add("## Cartões e parcelas");
+  add("## Dívidas: cartão, empréstimos e parcelas");
   add();
   add(
-    `- Comprometimento da renda com cartão de crédito neste mês: ${formatPct(resumo.comprometimentoCartao)}`,
+    `- Fatura do cartão de crédito neste mês: ${formatBRL(resumo.gastoCartao)} (${formatPct(resumo.comprometimentoCartao)} da renda)`,
   );
   add(
-    `- Valor mensal já comprometido com parcelas nos próximos meses: ${formatBRL(d.compromissoMensalFuturo)}`,
+    `- Parcelas de empréstimos / financiamentos neste mês: ${formatBRL(resumo.gastoEmprestimo)} (${formatPct(resumo.comprometimentoEmprestimo)} da renda)`,
+  );
+  add(
+    `- Compromisso mensal que continua nos próximos meses: ${formatBRL(d.compromissoFuturo.mensal)}`,
+  );
+  add(
+    `  - sendo ${formatBRL(d.compromissoFuturo.cartao)} de cartão, ${formatBRL(d.compromissoFuturo.emprestimo)} de empréstimos/financiamentos e ${formatBRL(d.compromissoFuturo.outras)} de outras parcelas`,
   );
   if (d.parcelasFuturas.length) {
     add();

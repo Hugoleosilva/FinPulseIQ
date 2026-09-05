@@ -4,6 +4,7 @@ import {
   emojiCategoria,
   PESO_ESSENCIALIDADE,
   CATEGORIA_FATURA_CARTAO,
+  CATEGORIA_EMPRESTIMOS,
 } from "./categorias";
 
 /** Uma despesa "conta como cartão de crédito"? */
@@ -11,6 +12,19 @@ function ehGastoCartao(d: Despesa): boolean {
   return (
     d.meioPagamento === "cartao" || d.categoria === CATEGORIA_FATURA_CARTAO
   );
+}
+
+/** Uma despesa é empréstimo / financiamento / consórcio? */
+function ehGastoEmprestimo(d: Despesa): boolean {
+  return d.categoria === CATEGORIA_EMPRESTIMOS;
+}
+
+export type TipoDivida = "cartao" | "emprestimo" | "outra";
+
+export function classificarDivida(categoria: string, meio?: string): TipoDivida {
+  if (categoria === CATEGORIA_EMPRESTIMOS) return "emprestimo";
+  if (categoria === CATEGORIA_FATURA_CARTAO || meio === "cartao") return "cartao";
+  return "outra";
 }
 
 // ---------------------------------------------------------------------------
@@ -52,6 +66,8 @@ export interface ResumoMes {
   taxaPoupanca: number;
   gastoCartao: number;
   comprometimentoCartao: number;
+  gastoEmprestimo: number;
+  comprometimentoEmprestimo: number;
   despesasEssenciais: number;
   despesasReduziveis: number;
   despesasDesnecessarias: number;
@@ -59,6 +75,8 @@ export interface ResumoMes {
   despesaExtraordinaria: number;
   /** Parte dos extraordinários que caiu no cartão de crédito. */
   despesaExtraordinariaCartao: number;
+  /** Parte dos extraordinários que era empréstimo/financiamento. */
+  despesaExtraordinariaEmprestimo: number;
   porCategoria: LinhaCategoria[];
 }
 
@@ -79,6 +97,9 @@ export function resumoMes(mes: Mes): ResumoMes {
 
   const gastoCartao = soma(
     mes.despesas.filter(ehGastoCartao).map((d) => d.valor),
+  );
+  const gastoEmprestimo = soma(
+    mes.despesas.filter(ehGastoEmprestimo).map((d) => d.valor),
   );
 
   const porEssencialidade = (e: Essencialidade) =>
@@ -123,6 +144,9 @@ export function resumoMes(mes: Mes): ResumoMes {
     taxaPoupanca: receitaTotal > 0 ? saldo / receitaTotal : 0,
     gastoCartao,
     comprometimentoCartao: receitaTotal > 0 ? gastoCartao / receitaTotal : 0,
+    gastoEmprestimo,
+    comprometimentoEmprestimo:
+      receitaTotal > 0 ? gastoEmprestimo / receitaTotal : 0,
     despesasEssenciais: porEssencialidade("essencial"),
     despesasReduziveis: porEssencialidade("reduzivel"),
     despesasDesnecessarias: porEssencialidade("desnecessario"),
@@ -134,6 +158,11 @@ export function resumoMes(mes: Mes): ResumoMes {
     despesaExtraordinariaCartao: soma(
       mes.despesas
         .filter((d) => d.natureza === "extraordinaria" && ehGastoCartao(d))
+        .map((d) => d.valor),
+    ),
+    despesaExtraordinariaEmprestimo: soma(
+      mes.despesas
+        .filter((d) => d.natureza === "extraordinaria" && ehGastoEmprestimo(d))
         .map((d) => d.valor),
     ),
     porCategoria,
@@ -149,6 +178,10 @@ export function resumoSemExtraordinarios(r: ResumoMes): ResumoMes {
   const despesaTotal = r.despesaTotal - r.despesaExtraordinaria;
   const saldo = r.saldoInicial + r.receitaTotal - despesaTotal;
   const gastoCartao = Math.max(0, r.gastoCartao - r.despesaExtraordinariaCartao);
+  const gastoEmprestimo = Math.max(
+    0,
+    r.gastoEmprestimo - r.despesaExtraordinariaEmprestimo,
+  );
   return {
     ...r,
     despesaTotal,
@@ -156,8 +189,12 @@ export function resumoSemExtraordinarios(r: ResumoMes): ResumoMes {
     taxaPoupanca: r.receitaTotal > 0 ? saldo / r.receitaTotal : 0,
     gastoCartao,
     comprometimentoCartao: r.receitaTotal > 0 ? gastoCartao / r.receitaTotal : 0,
+    gastoEmprestimo,
+    comprometimentoEmprestimo:
+      r.receitaTotal > 0 ? gastoEmprestimo / r.receitaTotal : 0,
     despesaExtraordinaria: 0,
     despesaExtraordinariaCartao: 0,
+    despesaExtraordinariaEmprestimo: 0,
   };
 }
 
@@ -448,7 +485,12 @@ export function nivelSaude({
 
   const notaPoupanca = clamp(resumo.taxaPoupanca / 0.25, 0, 1);
   const notaCartao = faixaLinear(resumo.comprometimentoCartao, 0.15, 0.5);
-  const notaParcelas = faixaLinear(compromissoMensalFuturo / receita, 0.1, 0.5);
+  const notaEmprestimo = faixaLinear(
+    resumo.comprometimentoEmprestimo,
+    0.1,
+    0.4,
+  );
+  const notaParcelas = faixaLinear(compromissoMensalFuturo / receita, 0.1, 0.6);
   const notaEssenciais = faixaLinear(
     resumo.despesasEssenciais / receita,
     0.5,
@@ -484,13 +526,26 @@ export function nivelSaude({
                 : "Uso do cartão sob controle.",
     },
     {
+      rotulo: "Comprometido com empréstimos e financiamentos",
+      valor: pct(resumo.comprometimentoEmprestimo),
+      nota: notaEmprestimo,
+      comentario:
+        resumo.gastoEmprestimo <= 0
+          ? "Sem parcela de empréstimo ou financiamento neste mês."
+          : resumo.comprometimentoEmprestimo > 0.3
+            ? "Fatia alta da renda vai para dívidas com juros."
+            : "Parcelas de dívidas sob controle.",
+    },
+    {
       rotulo: "Parcelas para os próximos meses",
       valor: pct(compromissoMensalFuturo / receita),
       nota: notaParcelas,
       comentario:
-        compromissoMensalFuturo / receita > 0.3
-          ? "Boa parte dos próximos meses já está comprometida."
-          : "Pouca coisa parcelada para frente.",
+        compromissoMensalFuturo / receita > 0.4
+          ? "Boa parte dos próximos meses já está comprometida com parcelas."
+          : compromissoMensalFuturo > 0
+            ? "Há parcelas comprometendo os próximos meses."
+            : "Nada parcelado para frente.",
     },
     {
       rotulo: "Gastos essenciais",
@@ -515,8 +570,9 @@ export function nivelSaude({
   const score = arred(
     100 *
       (0.45 * notaPoupanca +
-        0.2 * notaCartao +
-        0.1 * notaParcelas +
+        0.12 * notaCartao +
+        0.1 * notaEmprestimo +
+        0.08 * notaParcelas +
         0.1 * notaEssenciais +
         0.15 * notaRisco),
   );
@@ -552,6 +608,7 @@ export interface ParcelaFutura {
   valorMensal: number;
   parcelasRestantes: number;
   totalRestante: number;
+  tipo: TipoDivida;
 }
 
 export function parcelasFuturasDoMes(mes: Mes): ParcelaFutura[] {
@@ -564,8 +621,37 @@ export function parcelasFuturasDoMes(mes: Mes): ParcelaFutura[] {
         valorMensal: d.valor,
         parcelasRestantes: restantes,
         totalRestante: arred(d.valor * restantes),
+        tipo: classificarDivida(d.categoria, d.meioPagamento),
       };
     });
+}
+
+export interface CompromissoFuturoTotal {
+  /** Valor mensal que continua nos próximos meses. */
+  mensal: number;
+  cartao: number;
+  emprestimo: number;
+  outras: number;
+}
+
+interface EntradaCompromisso {
+  valorMensal: number;
+  tipo: TipoDivida;
+  ativo: boolean;
+}
+
+export function somarCompromissoFuturo(
+  itens: EntradaCompromisso[],
+): CompromissoFuturoTotal {
+  const ativos = itens.filter((i) => i.ativo && i.valorMensal > 0);
+  const porTipo = (t: TipoDivida) =>
+    soma(ativos.filter((i) => i.tipo === t).map((i) => i.valorMensal));
+  return {
+    mensal: soma(ativos.map((i) => i.valorMensal)),
+    cartao: porTipo("cartao"),
+    emprestimo: porTipo("emprestimo"),
+    outras: porTipo("outra"),
+  };
 }
 
 // ---------------------------------------------------------------------------

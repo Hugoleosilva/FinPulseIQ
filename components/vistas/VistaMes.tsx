@@ -1,10 +1,5 @@
 import Link from "next/link";
-import {
-  getMes,
-  listarMeses,
-  listarCompromissos,
-  compromissoMensal,
-} from "@/lib/repo";
+import { getMes, listarMeses, listarCompromissos } from "@/lib/repo";
 import {
   resumoMes,
   fluxoCaixa,
@@ -12,8 +7,9 @@ import {
   nivelSaude,
   economiaPotencialTotal,
   resumoSemExtraordinarios,
+  ROTULO_FAIXA,
 } from "@/lib/calculos";
-import { ROTULO_FAIXA } from "@/lib/calculos";
+import { compromissoFuturoDoMes } from "@/lib/diagnostico";
 import { nomeMes, formatBRL } from "@/lib/format";
 import { Card, Aviso, BotaoLink, ValorGrande, TituloSecao } from "@/components/ui";
 import { SeloNivel } from "@/components/SeloNivel";
@@ -44,7 +40,7 @@ export async function VistaMes(props: VistaMesProps) {
 
   const vazio = mes.receitas.length === 0 && mes.despesas.length === 0;
   const anteriores = todosMeses.filter((m) => m.key < key);
-  const compFuturo = compromissoMensal(compromissos);
+  const compFuturo = compromissoFuturoDoMes(mes, compromissos).mensal;
 
   const resumo = resumoMes(mes);
   const fluxo = fluxoCaixa(mes);

@@ -52,7 +52,7 @@ export function FormCompromisso() {
         rotulo="Quantas parcelas ainda faltam?"
         type="number"
         min={1}
-        max={360}
+        max={420}
         defaultValue={6}
         exemplo="Se faltam 6, escreva 6"
         required
