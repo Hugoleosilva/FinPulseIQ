@@ -22,8 +22,8 @@ export default async function PaginaImportar({
         <h1 className="text-2xl font-extrabold">
           Importar planilha — {nomeMes(key)}
         </h1>
-        <BotaoLink href={`/mes/${key}/lancar`} variante="fantasma">
-          ← Preencher à mão
+        <BotaoLink href={`/mes/${key}/lancar`} variante="secundario">
+          Preencher à mão
         </BotaoLink>
       </div>
       <ImportarPlanilha chaveMes={key} />

@@ -64,8 +64,8 @@ export async function VistaDiagnostico(props: VistaDiagnosticoProps) {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <NavegadorMes chaveMes={key} base={props.navBase} sufixo={props.navSufixo} />
-        <BotaoLink href={props.hrefMes} variante="fantasma">
-          ← Voltar ao mês
+        <BotaoLink href={props.hrefMes} variante="secundario">
+          Voltar ao mês
         </BotaoLink>
       </div>
 

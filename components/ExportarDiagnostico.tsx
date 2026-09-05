@@ -76,7 +76,7 @@ export function ExportarDiagnostico({
         <div className="flex flex-wrap gap-3">
           {IAS.map((ia) => (
             <Botao key={ia.nome} onClick={() => copiarEabrir(ia)}>
-              Abrir o {ia.nome} →
+              Abrir o {ia.nome}
             </Botao>
           ))}
         </div>

@@ -125,7 +125,7 @@ export function ImportarPlanilha({ chaveMes }: { chaveMes: string }) {
               href={`/mes/${chaveMes}`}
               className="font-bold text-acento-escuro underline"
             >
-              Ver o resultado no meu mês →
+              Ver o resultado no meu mês
             </Link>
           </p>
         </Aviso>
