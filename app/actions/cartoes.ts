@@ -29,6 +29,8 @@ export async function salvarCartaoAction(
     limite: formData.get("limite"),
     diaFechamento: formData.get("diaFechamento"),
     diaVencimento: formData.get("diaVencimento"),
+    compartilhado: formData.get("compartilhado"),
+    titularFatura: formData.get("titularFatura") || undefined,
   });
   if (!parsed.success) {
     return { ok: false, campos: camposDeErro(parsed.error) };

@@ -100,6 +100,8 @@ export async function listarCartoes(userId: string): Promise<Cartao[]> {
     limite: d.limite,
     diaFechamento: d.diaFechamento,
     diaVencimento: d.diaVencimento,
+    compartilhado: d.compartilhado ?? false,
+    titularFatura: d.titularFatura ?? "",
   }));
 }
 
@@ -118,6 +120,8 @@ export async function salvarCartao(
         limite: dados.limite,
         diaFechamento: dados.diaFechamento,
         diaVencimento: dados.diaVencimento,
+        compartilhado: dados.compartilhado ?? false,
+        titularFatura: dados.compartilhado ? dados.titularFatura ?? "" : "",
       },
       $setOnInsert: { userId, id },
     },

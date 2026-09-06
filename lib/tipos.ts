@@ -78,6 +78,10 @@ export interface Cartao {
   limite: number;
   diaFechamento: number;
   diaVencimento: number;
+  /** Cartão dividido com outra pessoa (fatura tem seções por titular). */
+  compartilhado?: boolean;
+  /** Nome do titular a extrair da fatura, quando compartilhado (ex.: "Angélica"). */
+  titularFatura?: string;
 }
 
 export interface CompromissoFuturo {

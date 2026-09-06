@@ -52,7 +52,14 @@ export default async function PaginaCartoes() {
                 className="flex flex-wrap items-center justify-between gap-3 p-3"
               >
                 <span>
-                  <span className="font-semibold">{c.nome}</span>
+                  <span className="font-semibold">
+                    {c.nome}
+                    {c.compartilhado ? (
+                      <span className="ml-2 rounded bg-acento/10 px-1.5 py-0.5 text-xs font-bold text-acento-escuro">
+                        compartilhado{c.titularFatura ? ` · ${c.titularFatura}` : ""}
+                      </span>
+                    ) : null}
+                  </span>
                   <span className="block text-sm text-texto-suave">
                     Limite {formatBRL(c.limite)} · fecha dia {c.diaFechamento} ·
                     vence dia {c.diaVencimento}

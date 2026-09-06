@@ -30,6 +30,7 @@ export default async function PaginaFatura({
         cartaoId={cartao.id}
         cartaoNome={cartao.nome}
         mesAtual={mesAtualKey()}
+        titularFatura={cartao.compartilhado ? cartao.titularFatura ?? "" : ""}
       />
     </div>
   );

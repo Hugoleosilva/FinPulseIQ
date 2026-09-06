@@ -107,6 +107,8 @@ export const cartaoSchema = z.object({
   limite: dinheiro,
   diaFechamento: dia,
   diaVencimento: dia,
+  compartilhado: z.preprocess((v) => v === "on" || v === true, z.boolean()),
+  titularFatura: z.string().trim().max(60).optional(),
 });
 
 // --- Compromisso futuro ----------------------------------------------

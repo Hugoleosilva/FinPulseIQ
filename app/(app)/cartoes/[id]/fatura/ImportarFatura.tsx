@@ -44,10 +44,12 @@ export function ImportarFatura({
   cartaoId,
   cartaoNome,
   mesAtual,
+  titularFatura,
 }: {
   cartaoId: string;
   cartaoNome: string;
   mesAtual: string;
+  titularFatura: string;
 }) {
   const [aba, setAba] = useState<"pdf" | "total">("pdf");
 
@@ -73,7 +75,11 @@ export function ImportarFatura({
       </div>
 
       {aba === "pdf" ? (
-        <AbaPDF cartaoId={cartaoId} mesAtual={mesAtual} />
+        <AbaPDF
+          cartaoId={cartaoId}
+          mesAtual={mesAtual}
+          titularFatura={titularFatura}
+        />
       ) : (
         <AbaTotal cartaoId={cartaoId} cartaoNome={cartaoNome} mesAtual={mesAtual} />
       )}
@@ -148,9 +154,11 @@ function AbaTotal({
 function AbaPDF({
   cartaoId,
   mesAtual,
+  titularFatura,
 }: {
   cartaoId: string;
   mesAtual: string;
+  titularFatura: string;
 }) {
   const [analisando, startAnalise] = useTransition();
   const [erroAnalise, setErroAnalise] = useState<string | null>(null);
@@ -183,7 +191,12 @@ function AbaPDF({
       setErroAnalise(null);
       setFatura(r.dados);
       setMes(mesDoVencimento(r.dados.vencimento, mesAtual));
-      setTitularFiltro("todos");
+      // Cartão compartilhado: já filtra pelo titular configurado.
+      const alvo = titularFatura.trim().toUpperCase();
+      const match = alvo
+        ? r.dados.titulares.find((t) => t.toUpperCase().includes(alvo))
+        : null;
+      setTitularFiltro(match ?? "todos");
       setLinhas(
         r.dados.transacoes.map((t) => ({
           incluir: true,
@@ -286,7 +299,7 @@ function AbaPDF({
                   ))}
                 </select>
               </label>
-              {fatura.titulares.length > 1 ? (
+              {fatura.titulares.length > 1 || titularFatura ? (
                 <label className="text-sm font-bold">
                   Importar transações de
                   <select
@@ -304,6 +317,13 @@ function AbaPDF({
                 </label>
               ) : null}
             </div>
+            {titularFatura && titularFiltro === "todos" ? (
+              <p className="mt-2 text-sm font-semibold text-alerta">
+                Este cartão é compartilhado (titular “{titularFatura}”), mas não
+                achei essa seção na fatura. Confira o filtro acima antes de
+                importar.
+              </p>
+            ) : null}
           </Card>
 
           <div className="overflow-x-auto rounded-xl border border-borda">
