@@ -18,6 +18,8 @@ export interface FaturaLida {
   banco: string | null;
   cartaoFinal: string | null;
   totalFatura: number | null;
+  /** Total só dos lançamentos deste mês (sem saldo financiado nem encargos). */
+  totalLancamentos: number | null;
   vencimento: string | null; // "DD/MM/AAAA"
   titulares: string[];
   transacoes: TransacaoFatura[];
@@ -185,6 +187,7 @@ export function interpretarFaturaItau(texto: string): FaturaLida {
     banco: /ITA[UÚ]/i.test(texto) ? "Itaú" : null,
     cartaoFinal: null,
     totalFatura: null,
+    totalLancamentos: null,
     vencimento: null,
     titulares: [],
     transacoes: [],
@@ -202,6 +205,14 @@ export function interpretarFaturaItau(texto: string): FaturaLida {
     if (mTotal && out.totalFatura == null) {
       out.totalFatura = Number(mTotal[1].replace(/\./g, "").replace(",", "."));
     }
+    const mLanc = l.match(
+      /(?:TOTAL DOS LAN[ÇC]AMENTOS ATUAIS|LAN[ÇC]AMENTOS ATUAIS)\s+(\d{1,3}(?:\.\d{3})*,\d{2})/i,
+    );
+    if (mLanc && out.totalLancamentos == null) {
+      out.totalLancamentos = Number(
+        mLanc[1].replace(/\./g, "").replace(",", "."),
+      );
+    }
   }
 
   let secao: TransacaoFatura["origem"] | "pagamentos" | null = null;
@@ -216,7 +227,12 @@ export function interpretarFaturaItau(texto: string): FaturaLida {
     const linha = linhas[i];
     const N = norm(linha);
 
-    if (PARAR.some((p) => N.startsWith(p))) {
+    // "PARAR" só encerra DEPOIS de já estarmos numa seção de lançamentos —
+    // senão rótulos do cabeçalho da 1ª página (ex.: "Limite total de crédito:")
+    // abortariam a leitura antes das transações.
+    const emTransacoes =
+      secao === "compra" || secao === "internacional" || secao === "servico";
+    if (emTransacoes && PARAR.some((p) => N.startsWith(p))) {
       empurra(pendente);
       pendente = null;
       break;
@@ -362,6 +378,7 @@ export async function lerFaturaPDF(arquivo: File): Promise<FaturaLida> {
     banco: null,
     cartaoFinal: null,
     totalFatura: null,
+    totalLancamentos: null,
     vencimento: null,
     titulares: [],
     transacoes: [],

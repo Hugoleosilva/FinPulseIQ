@@ -230,6 +230,14 @@ function AbaPDF({
     .filter(({ l }) => l.incluir)
     .reduce((a, { l }) => a + l.valor, 0);
 
+  // Base de comparação: os "lançamentos atuais" (sem saldo financiado/encargos),
+  // se a fatura informar; senão o total da fatura.
+  const alvoTotal = fatura?.totalLancamentos ?? fatura?.totalFatura ?? null;
+  const temSaldoFinanciado =
+    fatura?.totalLancamentos != null &&
+    fatura?.totalFatura != null &&
+    fatura.totalFatura > fatura.totalLancamentos + 1;
+
   const upd = (idx: number, patch: Partial<Linha>) =>
     setLinhas((ls) => ls.map((l, i) => (i === idx ? { ...l, ...patch } : l)));
 
@@ -283,6 +291,10 @@ function AbaPDF({
               {fatura.vencimento ? ` · vence ${fatura.vencimento}` : ""}
               {fatura.totalFatura
                 ? ` · total ${formatBRL(fatura.totalFatura)}`
+                : ""}
+              {fatura.totalLancamentos &&
+              fatura.totalLancamentos !== fatura.totalFatura
+                ? ` · lançamentos do mês ${formatBRL(fatura.totalLancamentos)}`
                 : ""}
             </p>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -397,24 +409,33 @@ function AbaPDF({
             </table>
           </div>
 
-          {fatura.totalFatura &&
+          {temSaldoFinanciado ? (
+            <Aviso tipo="info" titulo="Esta fatura tem saldo parcelado/financiado">
+              O total da fatura ({formatBRL(fatura.totalFatura!)}) inclui dívida
+              de meses anteriores e encargos. As compras deste mês somam{" "}
+              {formatBRL(fatura.totalLancamentos!)} — é esse valor que estamos
+              conferindo aqui.
+            </Aviso>
+          ) : null}
+
+          {alvoTotal &&
           titularFiltro === "todos" &&
-          totalMarcado < fatura.totalFatura * 0.85 ? (
+          totalMarcado < alvoTotal * 0.85 ? (
             <Aviso tipo="alerta" titulo="Faltam transações?">
-              As linhas marcadas somam {formatBRL(totalMarcado)}, mas o total da
-              fatura é {formatBRL(fatura.totalFatura)}. Esta fatura pode ter um
-              layout que o leitor não pega bem — confira a lista, complete o que
-              faltar manualmente depois, ou use{" "}
+              As linhas marcadas somam {formatBRL(totalMarcado)}, mas os
+              lançamentos deste mês somam {formatBRL(alvoTotal)}. Esta fatura pode
+              ter um layout que o leitor não pega bem — confira a lista, complete
+              o que faltar manualmente depois, ou use{" "}
               <strong>“Só o valor total”</strong>.
             </Aviso>
           ) : null}
 
-          {fatura.totalFatura &&
+          {alvoTotal &&
           titularFiltro === "todos" &&
-          totalMarcado > fatura.totalFatura * 1.1 ? (
+          totalMarcado > alvoTotal * 1.1 ? (
             <Aviso tipo="alerta" titulo="Somou demais?">
-              As linhas marcadas somam {formatBRL(totalMarcado)}, mais que o total
-              da fatura ({formatBRL(fatura.totalFatura)}). Pode ter entrado
+              As linhas marcadas somam {formatBRL(totalMarcado)}, mais que os
+              lançamentos deste mês ({formatBRL(alvoTotal)}). Pode ter entrado
               parcela de fatura futura — desmarque as linhas que não são deste
               mês antes de importar.
             </Aviso>

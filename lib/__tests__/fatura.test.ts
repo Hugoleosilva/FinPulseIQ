@@ -147,6 +147,72 @@ DATA ESTABELECIMENTO VALOR EM R$
 05/07 Globo Globoplay 03/12 22,28
 `;
 
+// Layout Platinum: caixa de resumo na 1ª página traz "Limite total de crédito:"
+// ANTES das transações, e a fatura tem saldo financiado (soma das transações
+// é menor que o total da fatura).
+const FATURA_PLATINUM = `
+Cartão 5415.XXXX.XXXX.9849
+Vencimento: 14/09/2026
+Total da fatura anterior 2.049,76
+Saldo financiado 1.549,76
+Encargos (Financiamento + moratório) 250,11
+Lançamentos atuais 1.143,42
+Total desta fatura 2.943,29
+O total da sua fatura é:
+R$ 2.943,29
+Limite total de crédito:
+R$ 6.680,00
+Titular HUGO LEONARDO LUIZ DA SILVA
+Previsão próx. Fechamento: 05/10/2026
+
+Pagamentos efetuados
+DATA VALOR EM R$
+12/08 PAGAMENTO -500,00
+Total dos pagamentos -500,00
+Lançamentos: compras e saques
+HUGO LEONARDO LUIZ DA SIL
+DATA ESTABELECIMENTO VALOR EM R$
+15/07 SUPRIMAIS SUPE 02/02 70,83
+supermercado Recife
+06/08 EBN *SPOTIFYCUR 23,90
+outros CURITIBA
+28/08 DROGASIL 4009RECIFEBRA 21,10
+saúde RECIFE
+Lançamentos no cartão 1.108,75
+Lançamentos: produtos e serviços
+DATA PRODUTOS/SERVIÇOS VALOR EM R$
+21/08 SEGURO MAXI PROTECAO 18,34
+Lançamentos produtos e serviços 34,67
+Total dos lançamentos atuais 1.143,42
+Compras parceladas - próximas faturas
+DATA ESTABELECIMENTO VALOR EM R$
+20/07 OTICA BRASILRE 03/03 100,00
+Limites de crédito Valor em R$
+Limite total de crédito 6.680,00
+`;
+
+describe("interpretarFaturaItau — layout Platinum (limite na 1ª página)", () => {
+  const f = interpretarFaturaItau(FATURA_PLATINUM);
+
+  it("não aborta ao ver 'Limite total de crédito:' antes das transações", () => {
+    expect(f.transacoes.length).toBe(4);
+    expect(f.transacoes.some((t) => t.descricao.includes("SUPRIMAIS"))).toBe(
+      true,
+    );
+    expect(f.transacoes.some((t) => t.descricao.includes("SEGURO"))).toBe(true);
+  });
+
+  it("para nas 'próximas faturas' (ignora OTICA 03/03)", () => {
+    expect(f.transacoes.some((t) => t.descricao.includes("OTICA"))).toBe(false);
+  });
+
+  it("ignora o pagamento", () => {
+    expect(f.transacoes.some((t) => t.descricao.includes("PAGAMENTO"))).toBe(
+      false,
+    );
+  });
+});
+
 describe("interpretarFaturaItau — layout co-branded", () => {
   const f = interpretarFaturaItau(FATURA_COBRAND);
 
