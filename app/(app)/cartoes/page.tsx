@@ -115,7 +115,9 @@ export default async function PaginaCartoes() {
                     </BotaoLink>
                     <BotaoExcluir
                       acao={apagarCartaoAction.bind(null, c.id)}
-                      confirmar={`Apagar o cartão "${c.nome}"?`}
+                      rotulo="Apagar cartão"
+                      forte
+                      confirmar={`Apagar o cartão "${c.nome}" e todos os seus dados? Os lançamentos já feitos nos meses continuam.`}
                     />
                   </span>
                 </li>

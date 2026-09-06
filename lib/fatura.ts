@@ -132,8 +132,9 @@ function classificar(
 
 // --- parsing ---------------------------------------------------------------
 
+// grupos: 1=data 2=descrição 3=parcelaAtual 4=parcelaTotal 5=sinal("-") 6=valor
 const RE_TRANSACAO =
-  /^(\d{2}\/\d{2})\s+(.+?)(?:\s*(\d{2})\/(\d{2}))?\s+(-?\d{1,3}(?:\.\d{3})*,\d{2})\s*$/;
+  /^(\d{2}\/\d{2})\s+(.+?)(?:\s*(\d{2})\/(\d{2}))?\s+(-\s*)?(\d{1,3}(?:\.\d{3})*,\d{2})\s*$/;
 
 const RE_NOME = /^[A-ZÀ-Ú][A-ZÀ-Ú.\s]{4,}$/;
 
@@ -194,8 +195,16 @@ export function interpretarFaturaItau(texto: string): FaturaLida {
   };
 
   // Cabeçalho
-  for (const l of linhas) {
-    const mCartao = l.match(/CART[AÃ]O\s+[\dX.]*?(\d{4})\s*$/i);
+  for (let li = 0; li < linhas.length; li++) {
+    const l = linhas[li];
+    // "Cartão 5487.XXXX.XXXX.2516" ou o número na linha seguinte a "Cartão",
+    // ou "(final 2516)".
+    const mCartao =
+      l.match(/CART[AÃ]O\s+[\dX.]*?(\d{4})\s*$/i) ||
+      l.match(/\(FINAL\s+(\d{4})\)/i) ||
+      (/^CART[AÃ]O\s*$/i.test(norm(l))
+        ? (linhas[li + 1] ?? "").match(/[\dX.]*?(\d{4})\s*$/)
+        : null);
     if (mCartao && !out.cartaoFinal) out.cartaoFinal = mCartao[1];
     const mVenc = l.match(/VENCIMENTO[:\s]+(\d{2}\/\d{2}\/\d{4})/i);
     if (mVenc && !out.vencimento) out.vencimento = mVenc[1];
@@ -304,9 +313,10 @@ export function interpretarFaturaItau(texto: string): FaturaLida {
     const m = linha.match(RE_TRANSACAO);
     if (m) {
       empurra(pendente);
-      const valor = Number(m[5].replace(/\./g, "").replace(",", "."));
-      // negativos = estornos/descontos, ignora
-      if (valor <= 0) {
+      const negativo = Boolean(m[5]);
+      const valor = Number(m[6].replace(/\./g, "").replace(",", "."));
+      // negativos = estornos/descontos/créditos de parcelamento, ignora
+      if (negativo || valor <= 0) {
         pendente = null;
         continue;
       }
