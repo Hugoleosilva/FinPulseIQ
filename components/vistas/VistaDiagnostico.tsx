@@ -6,7 +6,8 @@ import {
 } from "@/lib/calculos";
 import { gerarDiagnosticoMarkdown, economiaPotencial } from "@/lib/exportar";
 import { nomeMes, slugMes, formatBRL, formatPct } from "@/lib/format";
-import { Card, TituloSecao, Aviso, BotaoLink } from "@/components/ui";
+import { Card, Aviso, BotaoLink } from "@/components/ui";
+import { CardColapsavel } from "@/components/CardColapsavel";
 import { SeloNivel } from "@/components/SeloNivel";
 import { TabelaOportunidades } from "@/components/TabelaOportunidades";
 import { Simulador } from "@/components/Simulador";
@@ -89,8 +90,7 @@ export async function VistaDiagnostico(props: VistaDiagnosticoProps) {
         <>
           <AvisoAndamento andamento={dados.andamento} nomeMes={nomeMes(key)} />
 
-          <Card>
-            <TituloSecao>1. Como estão as contas</TituloSecao>
+          <CardColapsavel id="diag-1-contas" titulo="1. Como estão as contas">
             <div className="flex flex-wrap items-center gap-4">
               <SeloNivel
                 faixa={nivel.faixa}
@@ -127,12 +127,13 @@ export async function VistaDiagnostico(props: VistaDiagnosticoProps) {
                 </li>
               ))}
             </ul>
-          </Card>
+          </CardColapsavel>
 
-          <Card>
-            <TituloSecao ajuda="Da maior para a menor oportunidade. O sistema nunca sugere cortar o que foi marcado como essencial.">
-              2. Onde atacar primeiro
-            </TituloSecao>
+          <CardColapsavel
+            id="diag-2-onde-atacar"
+            titulo="2. Onde atacar primeiro"
+            ajuda="Da maior para a menor oportunidade. O sistema nunca sugere cortar o que foi marcado como essencial."
+          >
             <TabelaOportunidades ops={ops} />
             {ops.some((o) => o.potencial > 0) ? (
               <p className="mt-4 rounded-xl bg-fundo p-3 text-sm">
@@ -141,21 +142,21 @@ export async function VistaDiagnostico(props: VistaDiagnosticoProps) {
                 onde existe mais espaço para respirar, não uma ordem de corte.
               </p>
             ) : null}
-          </Card>
+          </CardColapsavel>
 
-          <Card>
-            <TituloSecao>3. Simule o resultado</TituloSecao>
+          <CardColapsavel id="diag-3-simular" titulo="3. Simule o resultado">
             <Simulador
               ops={opsSimples}
               saldoAntes={resumo.saldo}
               despesaAntes={resumo.despesaTotal}
             />
-          </Card>
+          </CardColapsavel>
 
-          <Card>
-            <TituloSecao ajuda="Quanto da renda já está prometido, e o que continua pesando nos próximos meses.">
-              4. Dívidas: cartão, empréstimos e parcelas
-            </TituloSecao>
+          <CardColapsavel
+            id="diag-4-dividas"
+            titulo="4. Dívidas: cartão, empréstimos e parcelas"
+            ajuda="Quanto da renda já está prometido, e o que continua pesando nos próximos meses."
+          >
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="rounded-xl border border-borda p-3">
                 <p className="text-sm text-texto-suave">
@@ -204,7 +205,7 @@ export async function VistaDiagnostico(props: VistaDiagnosticoProps) {
                 ))}
               </ul>
             )}
-          </Card>
+          </CardColapsavel>
 
           {fluxo.diasNegativos.length > 0 && (
             <Aviso tipo="alerta" titulo="Risco de caixa">
@@ -214,15 +215,16 @@ export async function VistaDiagnostico(props: VistaDiagnosticoProps) {
             </Aviso>
           )}
 
-          <Card>
-            <TituloSecao ajuda="O sistema faz a conta. A IA ajuda a montar o plano.">
-              5. Leve para uma IA montar o plano de ação
-            </TituloSecao>
+          <CardColapsavel
+            id="diag-5-ia"
+            titulo="5. Leve para uma IA montar o plano de ação"
+            ajuda="O sistema faz a conta. A IA ajuda a montar o plano."
+          >
             <ExportarDiagnostico
               markdown={markdown}
               nomeArquivo={`diagnostico-financeiro-${slugMes(key)}.md`}
             />
-          </Card>
+          </CardColapsavel>
 
           <details className="rounded-2xl border border-borda p-4 text-sm">
             <summary className="cursor-pointer font-bold">

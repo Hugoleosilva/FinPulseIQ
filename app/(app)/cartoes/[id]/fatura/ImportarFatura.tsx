@@ -10,7 +10,11 @@ import {
   type EstadoTotal,
 } from "@/app/actions/fatura";
 import type { FaturaLida, TransacaoFatura } from "@/lib/fatura";
-import { CATEGORIAS, getCategoria } from "@/lib/categorias";
+import {
+  CATEGORIAS,
+  getCategoria,
+  ROTULO_ESSENCIALIDADE,
+} from "@/lib/categorias";
 import { nomeMes, formatBRL, deslocaMes } from "@/lib/format";
 import { Botao, Aviso, Card } from "@/components/ui";
 import { CampoTexto } from "@/components/campos";
@@ -361,14 +365,21 @@ function AbaPDF({
             ) : null}
           </Card>
 
+          <p className="text-sm text-texto-suave">
+            Confira a <strong>categoria</strong> e o{" "}
+            <strong>“esse gasto é”</strong> de cada linha — é isso que o
+            diagnóstico usa para achar os vazamentos. O sistema chuta ao ler o
+            PDF; ajuste o que não estiver certo.
+          </p>
           <div className="overflow-x-auto rounded-xl border border-borda">
-            <table className="w-full min-w-[42rem] text-sm">
+            <table className="w-full min-w-[52rem] text-sm">
               <thead className="bg-fundo text-left text-texto-suave">
                 <tr>
                   <th className="p-2"></th>
                   <th className="p-2">Descrição</th>
                   <th className="p-2 text-right">Valor</th>
                   <th className="p-2">Categoria</th>
+                  <th className="p-2">Esse gasto é...</th>
                   <th className="p-2">Parcela</th>
                 </tr>
               </thead>
@@ -418,6 +429,28 @@ function AbaPDF({
                             {c.emoji} {c.nome}
                           </option>
                         ))}
+                      </select>
+                    </td>
+                    <td className="p-2">
+                      <select
+                        value={l.essencialidade}
+                        onChange={(e) =>
+                          upd(idx, {
+                            essencialidade: e.target
+                              .value as Linha["essencialidade"],
+                          })
+                        }
+                        className="w-36 rounded border border-borda px-2 py-1"
+                      >
+                        <option value="essencial">
+                          {ROTULO_ESSENCIALIDADE.essencial}
+                        </option>
+                        <option value="reduzivel">
+                          {ROTULO_ESSENCIALIDADE.reduzivel}
+                        </option>
+                        <option value="desnecessario">
+                          {ROTULO_ESSENCIALIDADE.desnecessario}
+                        </option>
                       </select>
                     </td>
                     <td className="p-2 text-texto-suave">
