@@ -122,6 +122,9 @@ export async function importarFatura(
 
 export type EstadoTotal = { ok: boolean; erro?: string } | null;
 
+const CAT_FATURA = "Fatura de cartão (sem detalhar)";
+
+/** Cria ou atualiza a "fatura total" (sem detalhar) de um cartão num mês. */
 export async function lancarFaturaTotal(
   cartaoId: string,
   key: string,
@@ -143,28 +146,62 @@ export async function lancarFaturaTotal(
   if (!Number.isFinite(valor) || valor <= 0) {
     return { ok: false, erro: "Informe o valor da fatura." };
   }
-  const abertaTxt = formData.get("aberta") === "on" ? " (em aberto)" : "";
+  const aberta = formData.get("aberta") === "on";
+  const subcategoria = aberta ? "Fatura em aberto" : "Fatura fechada";
 
-  const nova: Despesa = {
-    id: randomUUID(),
-    descricao: `Fatura ${cartao.nome}${abertaTxt}`,
+  const mes = await getMes(userId, key);
+  // já existe uma "fatura total" deste cartão neste mês? atualiza.
+  const existente = mes.despesas.find(
+    (d) =>
+      d.cartaoId === cartaoId &&
+      d.categoria === CAT_FATURA &&
+      (d.subcategoria === "Fatura em aberto" ||
+        d.subcategoria === "Fatura fechada" ||
+        d.subcategoria === "Fatura do mês"),
+  );
+
+  const base = {
+    descricao: `Fatura ${cartao.nome}`,
     valor: Math.round(valor * 100) / 100,
     dia: cartao.diaVencimento,
-    categoria: "Fatura de cartão (sem detalhar)",
-    subcategoria: "Fatura do mês",
-    meioPagamento: "cartao",
+    categoria: CAT_FATURA,
+    subcategoria,
+    meioPagamento: "cartao" as const,
     cartaoId,
-    essencialidade: "reduzivel",
-    natureza: "normal",
+    essencialidade: "reduzivel" as const,
+    natureza: "normal" as const,
     recorrente: false,
     parcela: null,
   };
 
-  const mes = await getMes(userId, key);
-  await salvarMes(userId, key, { despesas: [...mes.despesas, nova] });
+  const despesas = existente
+    ? mes.despesas.map((d) => (d.id === existente.id ? { ...d, ...base } : d))
+    : [...mes.despesas, { id: randomUUID(), ...base } as Despesa];
+
+  await salvarMes(userId, key, { despesas });
   revalidatePath(`/mes/${key}`);
   revalidatePath(`/mes/${key}/diagnostico`);
   revalidatePath("/cartoes");
-  await logAlteracao(`lançou a fatura de um cartão (${key})`);
+  revalidatePath(`/cartoes/${cartaoId}`);
+  await logAlteracao(
+    `${existente ? "atualizou" : "lançou"} a fatura de um cartão (${key})`,
+  );
   return { ok: true };
+}
+
+export async function apagarFaturaTotal(
+  cartaoId: string,
+  key: string,
+  despesaId: string,
+): Promise<void> {
+  const { userId } = await exigirSessao();
+  const mes = await getMes(userId, key);
+  await salvarMes(userId, key, {
+    despesas: mes.despesas.filter((d) => d.id !== despesaId),
+  });
+  revalidatePath(`/mes/${key}`);
+  revalidatePath(`/mes/${key}/diagnostico`);
+  revalidatePath("/cartoes");
+  revalidatePath(`/cartoes/${cartaoId}`);
+  await logAlteracao(`apagou a fatura de um cartão (${key})`);
 }

@@ -4,9 +4,14 @@ import { exigirSessao } from "@/lib/dal";
 import { listarCartoes, listarMeses } from "@/lib/repo";
 import { formatBRL, formatPct, nomeMesTitulo } from "@/lib/format";
 import { emojiCategoria } from "@/lib/categorias";
+import { mesAtualKey } from "@/lib/format";
 import { Card, TituloSecao, Aviso, BotaoLink } from "@/components/ui";
 import { Colapsavel } from "@/components/Colapsavel";
+import { FaturasCartao, type FaturaTotalItem } from "./FaturasCartao";
 import type { Despesa } from "@/lib/tipos";
+
+const CAT_FATURA = "Fatura de cartão (sem detalhar)";
+const SUBS_TOTAL = ["Fatura fechada", "Fatura em aberto", "Fatura do mês"];
 
 export const metadata: Metadata = { title: "Cartão — FinPulseIQ" };
 
@@ -34,6 +39,23 @@ export default async function PaginaCartao({
     0,
   );
 
+  const faturasTotais: FaturaTotalItem[] = porMes
+    .map((m) => {
+      const d = m.gastos.find(
+        (g) => g.categoria === CAT_FATURA && SUBS_TOTAL.includes(g.subcategoria),
+      );
+      return d
+        ? {
+            key: m.key,
+            valor: d.valor,
+            aberta: d.subcategoria === "Fatura em aberto",
+            despesaId: d.id,
+          }
+        : null;
+    })
+    .filter((x): x is FaturaTotalItem => x !== null)
+    .sort((a, b) => b.key.localeCompare(a.key));
+
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -60,6 +82,18 @@ export default async function PaginaCartao({
             }
           />
         </dl>
+      </Card>
+
+      <Card>
+        <TituloSecao ajuda="Só o valor total da fatura, mês a mês — marque se ainda está em aberto. Bom para prever o que vem.">
+          Fatura por mês (valor total)
+        </TituloSecao>
+        <FaturasCartao
+          cartaoId={id}
+          cartaoNome={cartao.nome}
+          mesAtual={mesAtualKey()}
+          faturas={faturasTotais}
+        />
       </Card>
 
       {porMes.length === 0 ? (

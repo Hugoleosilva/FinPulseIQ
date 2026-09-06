@@ -224,6 +224,8 @@ export const CATEGORIAS: CategoriaDef[] = [
       "Use só quando não quiser detalhar as compras do cartão. O ideal é lançar cada compra na categoria certa e marcar a forma de pagamento como 'Cartão de crédito'.",
     subcategorias: [
       "Fatura do mês",
+      "Fatura fechada",
+      "Fatura em aberto",
       "Anuidade",
       "Juros / rotativo",
       "IOF",
