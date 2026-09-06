@@ -217,7 +217,7 @@ export function FormDespesa({
           {
             v: "extraordinaria",
             t: "Um gasto extraordinário (não se repete)",
-            d: "Fora do normal: antecipei parcelas do cartão, consertei o carro, comprei um eletrodoméstico. Não conta como vazamento e o sistema mostra como o mês ficaria sem ele.",
+            d: "Fora do normal: quitei/antecipei parcelas, consertei o carro, comprei um eletrodoméstico, paguei uma assinatura anual de uma vez. Não conta como vazamento e o sistema mostra como o mês ficaria sem ele.",
           },
         ].map((o) => (
           <label
