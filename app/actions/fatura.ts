@@ -45,6 +45,7 @@ interface LinhaConfirmada {
   categoria: string;
   subcategoria: string;
   essencialidade: Despesa["essencialidade"];
+  natureza?: Despesa["natureza"];
   parcelaAtual?: number;
   parcelaTotal?: number;
   dia: number;
@@ -95,6 +96,11 @@ export async function importarFatura(
           }
         : null;
     const def = getCategoria(l.categoria);
+    const natureza: Despesa["natureza"] = parcela
+      ? "parcelada"
+      : l.natureza === "fixa" || l.natureza === "extraordinaria"
+        ? l.natureza
+        : "normal";
     return {
       id: randomUUID(),
       descricao: l.descricao.trim().slice(0, 80),
@@ -106,8 +112,8 @@ export async function importarFatura(
       meioPagamento: "cartao",
       cartaoId,
       essencialidade: l.essencialidade || "reduzivel",
-      natureza: parcela ? "parcelada" : "normal",
-      recorrente: false,
+      natureza,
+      recorrente: natureza === "fixa",
       parcela,
     };
   });

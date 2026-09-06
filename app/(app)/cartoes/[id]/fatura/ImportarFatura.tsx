@@ -19,6 +19,8 @@ import { nomeMes, formatBRL, deslocaMes } from "@/lib/format";
 import { Botao, Aviso, Card } from "@/components/ui";
 import { CampoTexto } from "@/components/campos";
 
+type NaturezaManual = "normal" | "fixa" | "extraordinaria";
+
 interface Linha {
   incluir: boolean;
   descricao: string;
@@ -26,11 +28,18 @@ interface Linha {
   categoria: string;
   subcategoria: string;
   essencialidade: TransacaoFatura["essencialidade"];
+  natureza: NaturezaManual;
   parcelaAtual?: number;
   parcelaTotal?: number;
   titular: string | null;
   origem: TransacaoFatura["origem"];
 }
+
+const ROTULO_NATUREZA: Record<NaturezaManual, string> = {
+  normal: "Gasto do mês",
+  fixa: "Conta fixa (todo mês)",
+  extraordinaria: "Não se repete",
+};
 
 function mesesOpcoes(base: string): string[] {
   return [-2, -1, 0, 1].map((n) => deslocaMes(base, n));
@@ -209,6 +218,7 @@ function AbaPDF({
         categoria: t.categoria,
         subcategoria: t.subcategoria,
         essencialidade: t.essencialidade,
+        natureza: "normal",
         parcelaAtual: t.parcela?.atual,
         parcelaTotal: t.parcela?.total,
         titular: t.titular,
@@ -232,6 +242,7 @@ function AbaPDF({
           categoria: "Empréstimos e financiamentos",
           subcategoria: "Juros do cartão / rotativo",
           essencialidade: "essencial",
+          natureza: "normal",
           // é do titular do cartão, não do adicional — some ao filtrar por titular
           titular: r.dados.titulares[0] ?? null,
           origem: "compra",
@@ -276,6 +287,7 @@ function AbaPDF({
         categoria: l.categoria,
         subcategoria: l.subcategoria,
         essencialidade: l.essencialidade,
+        natureza: l.natureza,
         parcelaAtual: l.parcelaAtual,
         parcelaTotal: l.parcelaTotal,
         dia: 0, // servidor usa o dia do vencimento do cartão
@@ -366,13 +378,14 @@ function AbaPDF({
           </Card>
 
           <p className="text-sm text-texto-suave">
-            Confira a <strong>categoria</strong> e o{" "}
-            <strong>“esse gasto é”</strong> de cada linha — é isso que o
-            diagnóstico usa para achar os vazamentos. O sistema chuta ao ler o
-            PDF; ajuste o que não estiver certo.
+            Confira <strong>categoria</strong>, <strong>“esse gasto é”</strong> e{" "}
+            <strong>tipo</strong> de cada linha — é isso que o diagnóstico usa. O
+            sistema chuta ao ler o PDF; ajuste o que não estiver certo. Em{" "}
+            <strong>Tipo</strong>: “Não se repete” para o que não volta (ex.:
+            assinatura já cancelada), “Conta fixa” para o que vem todo mês.
           </p>
           <div className="overflow-x-auto rounded-xl border border-borda">
-            <table className="w-full min-w-[52rem] text-sm">
+            <table className="w-full min-w-[62rem] text-sm">
               <thead className="bg-fundo text-left text-texto-suave">
                 <tr>
                   <th className="p-2"></th>
@@ -380,6 +393,7 @@ function AbaPDF({
                   <th className="p-2 text-right">Valor</th>
                   <th className="p-2">Categoria</th>
                   <th className="p-2">Esse gasto é...</th>
+                  <th className="p-2">Tipo</th>
                   <th className="p-2">Parcela</th>
                 </tr>
               </thead>
@@ -452,6 +466,31 @@ function AbaPDF({
                           {ROTULO_ESSENCIALIDADE.desnecessario}
                         </option>
                       </select>
+                    </td>
+                    <td className="p-2">
+                      {l.parcelaAtual ? (
+                        <span className="text-xs text-texto-suave">
+                          parcelada
+                        </span>
+                      ) : (
+                        <select
+                          value={l.natureza}
+                          onChange={(e) =>
+                            upd(idx, {
+                              natureza: e.target.value as NaturezaManual,
+                            })
+                          }
+                          className="w-40 rounded border border-borda px-2 py-1"
+                        >
+                          {(
+                            Object.keys(ROTULO_NATUREZA) as NaturezaManual[]
+                          ).map((n) => (
+                            <option key={n} value={n}>
+                              {ROTULO_NATUREZA[n]}
+                            </option>
+                          ))}
+                        </select>
+                      )}
                     </td>
                     <td className="p-2 text-texto-suave">
                       {l.parcelaAtual
