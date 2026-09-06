@@ -5,7 +5,7 @@ import { listarDocumentos } from "@/lib/arquivos";
 import { ROTULO_TIPO_DOC } from "@/lib/documentos";
 import { formatBRL, mesAtualKey, nomeMes } from "@/lib/format";
 import { emojiCategoria } from "@/lib/categorias";
-import { Card, TituloSecao, Aviso } from "@/components/ui";
+import { Card, TituloSecao, Aviso, BotaoLink } from "@/components/ui";
 import { BotaoExcluir } from "@/components/BotaoExcluir";
 import { FormCartao } from "./FormCartao";
 import { FormCompromisso } from "./FormCompromisso";
@@ -31,9 +31,9 @@ export default async function PaginaCartoes() {
       <h1 className="text-2xl font-extrabold">Cartões, parcelas e documentos</h1>
 
       <Aviso tipo="info">
-        Cadastrar os cartões ajuda o FinPulseIQ a mostrar quanto da sua renda já
-        está comprometida com o cartão. Os documentos ficam guardados aqui para
-        você consultar quando precisar.
+        Cadastre os cartões e use <strong>“Lançar fatura”</strong> para enviar o
+        PDF do Itaú — o sistema lê cada compra, sugere a categoria e mostra para
+        onde vai o dinheiro no cartão. Também dá para lançar só o valor total.
       </Aviso>
 
       <Card>
@@ -43,7 +43,7 @@ export default async function PaginaCartoes() {
             {cartoes.map((c) => (
               <li
                 key={c.id}
-                className="flex items-center justify-between gap-3 p-3"
+                className="flex flex-wrap items-center justify-between gap-3 p-3"
               >
                 <span>
                   <span className="font-semibold">{c.nome}</span>
@@ -52,10 +52,18 @@ export default async function PaginaCartoes() {
                     vence dia {c.diaVencimento}
                   </span>
                 </span>
-                <BotaoExcluir
-                  acao={apagarCartaoAction.bind(null, c.id)}
-                  confirmar={`Apagar o cartão "${c.nome}"?`}
-                />
+                <span className="flex items-center gap-2">
+                  <BotaoLink
+                    href={`/cartoes/${c.id}/fatura`}
+                    variante="secundario"
+                  >
+                    Lançar fatura
+                  </BotaoLink>
+                  <BotaoExcluir
+                    acao={apagarCartaoAction.bind(null, c.id)}
+                    confirmar={`Apagar o cartão "${c.nome}"?`}
+                  />
+                </span>
               </li>
             ))}
           </ul>
