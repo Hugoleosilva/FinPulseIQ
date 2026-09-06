@@ -87,14 +87,14 @@ export function FormCartao() {
             onChange={(e) => setCompartilhado(e.target.checked)}
             className="h-5 w-5 accent-acento"
           />
-          Este cartão é compartilhado com outra pessoa
+          Cartão compartilhado (tem cartão adicional de outra pessoa)
         </label>
         {compartilhado ? (
           <CampoTexto
             id="c-titular"
             name="titularFatura"
-            rotulo="Nome do titular a extrair da fatura"
-            ajuda="Ao importar a fatura desse cartão, só as compras dessa pessoa entram. Use o nome como aparece na fatura."
+            rotulo="Nome da pessoa deste perfil na fatura"
+            ajuda="A fatura separa as compras por pessoa (titular e adicional). Ao importar, só entram as compras de quem você indicar aqui. Escreva o nome como aparece na fatura — pode ser só o primeiro nome."
             exemplo="Angélica  (ou Angélica Silva)"
           />
         ) : null}
