@@ -210,12 +210,15 @@ function AbaPDF({
         titular: t.titular,
         origem: t.origem,
       }));
-      // Saldo financiado + encargos da fatura anterior: entra como um lançamento
-      // para o total bater com o valor a pagar da fatura.
-      const somaLinhas = base.reduce((a, l) => a + l.valor, 0);
+      // Saldo financiado + encargos da fatura anterior: só quando a fatura
+      // realmente informa "lançamentos atuais" menor que o total a pagar.
       const financiado =
-        r.dados.totalFatura != null
-          ? Math.round((r.dados.totalFatura - somaLinhas) * 100) / 100
+        r.dados.totalLancamentos != null &&
+        r.dados.totalFatura != null &&
+        r.dados.totalFatura > r.dados.totalLancamentos + 1
+          ? Math.round(
+              (r.dados.totalFatura - r.dados.totalLancamentos) * 100,
+            ) / 100
           : 0;
       if (financiado >= 1) {
         base.unshift({
@@ -225,7 +228,8 @@ function AbaPDF({
           categoria: "Empréstimos e financiamentos",
           subcategoria: "Juros do cartão / rotativo",
           essencialidade: "essencial",
-          titular: match ?? null,
+          // é do titular do cartão, não do adicional — some ao filtrar por titular
+          titular: r.dados.titulares[0] ?? null,
           origem: "compra",
         });
       }
@@ -427,7 +431,7 @@ function AbaPDF({
             </table>
           </div>
 
-          {temSaldoFinanciado ? (
+          {temSaldoFinanciado && titularFiltro === "todos" ? (
             <Aviso tipo="info" titulo="Esta fatura tem saldo parcelado/financiado">
               As compras deste mês somam{" "}
               {formatBRL(fatura.totalLancamentos!)}. O restante até o total da

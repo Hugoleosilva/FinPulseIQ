@@ -102,17 +102,22 @@ export default async function PaginaCartoes() {
                     </span>
                   </span>
                   <span className="flex items-center gap-2">
-                    <BotaoLink href={`/cartoes/${c.id}`} variante="secundario">
+                    <BotaoLink
+                      href={`/cartoes/${c.id}`}
+                      variante="secundario"
+                      className="min-w-[9.5rem]"
+                    >
                       {sit.enviada ? "Ver / editar" : "Ver"}
                     </BotaoLink>
                     {sit.enviada ? (
-                      <span className="rounded-lg border border-ok/30 bg-ok/10 px-3 py-2 text-sm font-bold text-ok">
+                      <span className="inline-flex min-w-[9.5rem] items-center justify-center gap-2 rounded-xl border border-ok/30 bg-ok/10 px-5 py-3 text-base font-semibold text-ok">
                         ✓ Fatura enviada
                       </span>
                     ) : (
                       <BotaoLink
                         href={`/cartoes/${c.id}/fatura`}
                         variante="secundario"
+                        className="min-w-[9.5rem]"
                       >
                         {sit.fechada ? "Enviar fatura" : "Lançar fatura"}
                       </BotaoLink>
