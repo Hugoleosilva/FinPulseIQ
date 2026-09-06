@@ -102,6 +102,7 @@ export default async function PaginaCartao({
 
       <Card>
         <Colapsavel
+          id={`cartao-${id}-faturas-total`}
           titulo={
             faturasTotais.length > 0
               ? `Fatura por mês (valor total) · ${faturasTotais.length}`
@@ -230,7 +231,10 @@ function MesDoCartao({
         ))}
       </ul>
 
-      <Colapsavel titulo={`Ver as ${gastos.length} transação(ões)`}>
+      <Colapsavel
+        id={`cartao-${cartaoId}-mes-${chave}-tx`}
+        titulo={`Ver as ${gastos.length} transação(ões)`}
+      >
         <ul className="divide-y divide-borda">
           {[...gastos]
             .sort((a, b) => a.dia - b.dia)

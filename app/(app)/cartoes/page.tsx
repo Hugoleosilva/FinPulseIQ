@@ -135,7 +135,11 @@ export default async function PaginaCartoes() {
           </ul>
         )}
         <div className="mt-3">
-          <Colapsavel titulo="+ Adicionar um cartão" aberto={cartoes.length === 0}>
+          <Colapsavel
+            id="cartoes-novo-cartao"
+            titulo="+ Adicionar um cartão"
+            aberto={cartoes.length === 0}
+          >
             <FormCartao />
           </Colapsavel>
         </div>
@@ -171,6 +175,7 @@ export default async function PaginaCartoes() {
         )}
         <div className="mt-3">
           <Colapsavel
+            id="cartoes-novo-compromisso"
             titulo="+ Adicionar um compromisso"
             aberto={compromissos.length === 0}
           >
@@ -220,6 +225,7 @@ export default async function PaginaCartoes() {
         )}
         <div className="mt-3">
           <Colapsavel
+            id="cartoes-novo-documento"
             titulo="+ Guardar um documento"
             aberto={documentos.length === 0}
           >

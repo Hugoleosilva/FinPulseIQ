@@ -213,6 +213,7 @@ export async function VistaMes(props: VistaMesProps) {
           )}
 
           <CardColapsavel
+            id="mes-categorias"
             titulo="Para onde vai o dinheiro"
             ajuda="Ordenado do maior para o menor. É aqui que mora o dinheiro."
           >
@@ -220,6 +221,7 @@ export async function VistaMes(props: VistaMesProps) {
           </CardColapsavel>
 
           <CardColapsavel
+            id="mes-vazamentos"
             titulo="Onde a torneira está pingando"
             ajuda="O sistema estima onde há mais espaço para cortar sem apertar o essencial."
           >
@@ -270,6 +272,7 @@ export async function VistaMes(props: VistaMesProps) {
           </CardColapsavel>
 
           <CardColapsavel
+            id="mes-fluxo"
             titulo="Saldo durante o mês"
             ajuda="Como o saldo caminha ao longo do mês, considerando os dias de cada entrada e saída."
           >
