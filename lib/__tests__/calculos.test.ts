@@ -285,8 +285,7 @@ describe("andamentoMes", () => {
   };
 
   it("separa o realizado do previsto no mês corrente", () => {
-    const hoje = new Date("2026-09-05T12:00:00");
-    const a = andamentoMes(m, hoje);
+    const a = andamentoMes(m, { ano: 2026, mes: 9, dia: 5 });
     expect(a.emAndamento).toBe(true);
     expect(a.diaDeHoje).toBe(5);
     expect(a.receitaRealizada).toBeCloseTo(1010.88, 2); // resgate dia 1
@@ -297,7 +296,7 @@ describe("andamentoMes", () => {
   });
 
   it("mês passado conta tudo como realizado", () => {
-    const a = andamentoMes(m, new Date("2026-11-10T12:00:00"));
+    const a = andamentoMes(m, { ano: 2026, mes: 11, dia: 10 });
     expect(a.emAndamento).toBe(false);
     expect(a.receitaPrevista).toBe(0);
     expect(a.despesaPrevista).toBe(0);

@@ -1,5 +1,7 @@
 // Funções de formatação para exibição (pt-BR).
 
+import { mesAtualKeyBR } from "./tempo";
+
 const MESES = [
   "janeiro",
   "fevereiro",
@@ -54,8 +56,9 @@ export function slugMes(key: string): string {
   return `${MESES[mes - 1]}-${ano}`;
 }
 
-/** Chave do mês atual, ex.: "2026-09" */
-export function mesAtualKey(d = new Date()): string {
+/** Chave do mês atual (fuso do Brasil quando sem argumento), ex.: "2026-09" */
+export function mesAtualKey(d?: Date): string {
+  if (!d) return mesAtualKeyBR();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 

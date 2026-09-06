@@ -1,4 +1,5 @@
 import type { Mes, Despesa, Essencialidade } from "./tipos";
+import { agoraBrasil, type DataBR } from "./tempo";
 import {
   getCategoria,
   emojiCategoria,
@@ -215,10 +216,13 @@ export interface AndamentoMes {
   saldoHoje: number;
 }
 
-export function andamentoMes(mes: Mes, hoje: Date = new Date()): AndamentoMes {
-  const mesKey = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}`;
+export function andamentoMes(
+  mes: Mes,
+  hoje: DataBR = agoraBrasil(),
+): AndamentoMes {
+  const mesKey = `${hoje.ano}-${String(hoje.mes).padStart(2, "0")}`;
   const emAndamento = mes.key === mesKey;
-  const dia = emAndamento ? hoje.getDate() : mes.key < mesKey ? 31 : 0;
+  const dia = emAndamento ? hoje.dia : mes.key < mesKey ? 31 : 0;
 
   const ate = (arr: { dia: number; valor: number }[]) =>
     soma(arr.filter((x) => x.dia <= dia).map((x) => x.valor));
@@ -374,10 +378,10 @@ function classificaPrioridade(potencial: number, receita: number): Prioridade {
 
 export function oportunidades(mes: Mes, historico: Mes[] = []): Oportunidade[] {
   const receita = soma(mes.receitas.map((r) => r.valor));
-  // Gastos extraordinários não entram: são pontuais, não há o que "reduzir"
-  // nos próximos meses.
+  // Não entram no cálculo de vazamentos: gastos extraordinários (pontuais) e
+  // parcelas em andamento/quitadas — você não "reduz" uma parcela contratada.
   const relevantes = mes.despesas.filter(
-    (d) => d.natureza !== "extraordinaria",
+    (d) => d.natureza !== "extraordinaria" && d.natureza !== "parcelada",
   );
   const despesaTotal = soma(relevantes.map((d) => d.valor));
 
