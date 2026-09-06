@@ -19,25 +19,39 @@ export interface FaturaTotalItem {
   despesaId: string;
 }
 
+function paraCampo(v: number): string {
+  return v.toLocaleString("pt-BR", { minimumFractionDigits: 2 });
+}
+
 export function FaturasCartao({
   cartaoId,
   cartaoNome,
   mesAtual,
   faturas,
+  sugestoes,
 }: {
   cartaoId: string;
   cartaoNome: string;
   mesAtual: string;
   faturas: FaturaTotalItem[];
+  /** Soma já lançada (PDF/manual) por mês, para pré-preencher o valor. */
+  sugestoes: Record<string, number>;
 }) {
   const opcoes = [-1, 0, 1, 2].map((n) => deslocaMes(mesAtual, n));
   const [mes, setMes] = useState(mesAtual);
   const existente = faturas.find((f) => f.key === mes);
+  const sugestao = sugestoes[mes];
 
   const [estado, action, pendente] = useActionState<EstadoTotal, FormData>(
-    lancarFaturaTotal.bind(null, cartaoId, mes),
+    lancarFaturaTotal.bind(null, cartaoId),
     null,
   );
+
+  const valorInicial = existente
+    ? paraCampo(existente.valor)
+    : sugestao
+      ? paraCampo(sugestao)
+      : "";
 
   return (
     <div className="flex flex-col gap-4">
@@ -78,6 +92,8 @@ export function FaturasCartao({
         action={action}
         className="grid gap-3 rounded-xl border border-borda bg-fundo p-4 sm:grid-cols-2"
       >
+        <input type="hidden" name="mes" value={mes} />
+
         <label className="text-sm font-bold">
           Mês da fatura
           <select
@@ -100,21 +116,24 @@ export function FaturasCartao({
           prefixo="R$"
           inputMode="decimal"
           placeholder="0,00"
-          defaultValue={
-            existente
-              ? existente.valor
-                  .toLocaleString("pt-BR", { minimumFractionDigits: 2 })
-              : ""
-          }
-          key={mes}
+          defaultValue={valorInicial}
+          key={`v-${mes}-${valorInicial}`}
         />
+
+        {sugestao && !existente ? (
+          <p className="text-xs text-texto-suave sm:col-span-2">
+            Já há {formatBRL(sugestao)} lançado neste cartão em {nomeMes(mes)} —
+            o campo já vem preenchido com esse valor. Ajuste se a fatura for
+            diferente.
+          </p>
+        ) : null}
 
         <fieldset className="sm:col-span-2 flex flex-wrap gap-4">
           <label className="flex items-center gap-2 text-sm font-semibold">
             <input
               type="checkbox"
               name="aberta"
-              defaultChecked={existente ? existente.aberta : true}
+              defaultChecked={existente ? existente.aberta : mes > mesAtual}
               key={`ab-${mes}`}
               className="h-5 w-5 accent-acento"
             />

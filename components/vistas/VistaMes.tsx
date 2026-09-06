@@ -13,6 +13,7 @@ import {
 import { compromissoFuturoDoMes } from "@/lib/diagnostico";
 import { nomeMes, formatBRL } from "@/lib/format";
 import { Card, Aviso, BotaoLink, ValorGrande, TituloSecao } from "@/components/ui";
+import { CardColapsavel } from "@/components/CardColapsavel";
 import { SeloNivel } from "@/components/SeloNivel";
 import { BarraCategorias } from "@/components/BarraCategorias";
 import { GraficoFluxo } from "@/components/graficos";
@@ -211,17 +212,17 @@ export async function VistaMes(props: VistaMesProps) {
             </Aviso>
           )}
 
-          <Card>
-            <TituloSecao ajuda="Ordenado do maior para o menor. É aqui que mora o dinheiro.">
-              Para onde vai o dinheiro
-            </TituloSecao>
+          <CardColapsavel
+            titulo="Para onde vai o dinheiro"
+            ajuda="Ordenado do maior para o menor. É aqui que mora o dinheiro."
+          >
             <BarraCategorias categorias={topCategorias} maximo={maxCategoria} />
-          </Card>
+          </CardColapsavel>
 
-          <Card>
-            <TituloSecao ajuda="O sistema estima onde há mais espaço para cortar sem apertar o essencial.">
-              Onde a torneira está pingando
-            </TituloSecao>
+          <CardColapsavel
+            titulo="Onde a torneira está pingando"
+            ajuda="O sistema estima onde há mais espaço para cortar sem apertar o essencial."
+          >
             {topVazamentos.length === 0 ? (
               <p className="text-texto-suave">
                 Nenhum vazamento relevante encontrado neste mês. 👏
@@ -266,14 +267,14 @@ export async function VistaMes(props: VistaMesProps) {
                 </div>
               </>
             )}
-          </Card>
+          </CardColapsavel>
 
-          <Card>
-            <TituloSecao ajuda="Como o saldo caminha ao longo do mês, considerando os dias de cada entrada e saída.">
-              Saldo durante o mês
-            </TituloSecao>
+          <CardColapsavel
+            titulo="Saldo durante o mês"
+            ajuda="Como o saldo caminha ao longo do mês, considerando os dias de cada entrada e saída."
+          >
             <GraficoFluxo dias={fluxo.dias} />
-          </Card>
+          </CardColapsavel>
 
           <p className="text-center text-sm text-texto-suave">
             <Link href={props.hrefHistorico} className="font-semibold underline">

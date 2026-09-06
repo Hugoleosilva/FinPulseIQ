@@ -57,12 +57,18 @@ export default async function PaginaCartao({
     .sort((a, b) => b.key.localeCompare(a.key));
 
   // já há transações detalhadas (PDF importado) neste cartão?
-  const temDetalhe = porMes.some((m) =>
-    m.gastos.some(
-      (g) =>
-        !(g.categoria === CAT_FATURA && SUBS_TOTAL.includes(g.subcategoria)),
-    ),
-  );
+  const ehFaturaTotal = (g: Despesa) =>
+    g.categoria === CAT_FATURA && SUBS_TOTAL.includes(g.subcategoria);
+  const temDetalhe = porMes.some((m) => m.gastos.some((g) => !ehFaturaTotal(g)));
+
+  // soma já lançada por mês (fora a "fatura total"), p/ pré-preencher o valor
+  const sugestoes: Record<string, number> = {};
+  for (const m of porMes) {
+    const soma = m.gastos
+      .filter((g) => !ehFaturaTotal(g))
+      .reduce((s, d) => s + d.valor, 0);
+    if (soma > 0) sugestoes[m.key] = Math.round(soma * 100) / 100;
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -111,6 +117,7 @@ export default async function PaginaCartao({
             cartaoNome={cartao.nome}
             mesAtual={mesAtualKey()}
             faturas={faturasTotais}
+            sugestoes={sugestoes}
           />
         </Colapsavel>
       </Card>

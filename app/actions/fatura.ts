@@ -127,7 +127,6 @@ const CAT_FATURA = "Fatura de cartão (sem detalhar)";
 /** Cria ou atualiza a "fatura total" (sem detalhar) de um cartão num mês. */
 export async function lancarFaturaTotal(
   cartaoId: string,
-  key: string,
   _prev: EstadoTotal,
   formData: FormData,
 ): Promise<EstadoTotal> {
@@ -135,6 +134,11 @@ export async function lancarFaturaTotal(
   const cartoes = await listarCartoes(userId);
   const cartao = cartoes.find((c) => c.id === cartaoId);
   if (!cartao) return { ok: false, erro: "Cartão não encontrado." };
+
+  const key = String(formData.get("mes") || "");
+  if (!/^\d{4}-\d{2}$/.test(key)) {
+    return { ok: false, erro: "Escolha o mês da fatura." };
+  }
 
   const valor = Number(
     String(formData.get("valor") || "")

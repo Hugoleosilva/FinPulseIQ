@@ -98,12 +98,13 @@ function AbaTotal({
 }) {
   const [mes, setMes] = useState(mesAtual);
   const [estado, action, pendente] = useActionState<EstadoTotal, FormData>(
-    lancarFaturaTotal.bind(null, cartaoId, mes),
+    lancarFaturaTotal.bind(null, cartaoId),
     null,
   );
 
   return (
     <form action={action} className="flex flex-col gap-4">
+      <input type="hidden" name="mes" value={mes} />
       <Aviso tipo="info">
         Sem detalhar: lança um único gasto com o valor da fatura. Bom para já ter
         uma visão do que vem, mesmo com a fatura ainda em aberto.
