@@ -38,6 +38,12 @@ export default async function PaginaCartoes() {
 
       <Card>
         <TituloSecao>Seus cartões</TituloSecao>
+        {cartoes.length === 0 && (
+          <p className="mb-3 text-sm text-texto-suave">
+            Cadastre um cartão no formulário abaixo. Depois aparece o botão{" "}
+            <strong>“Lançar fatura”</strong> ao lado dele.
+          </p>
+        )}
         {cartoes.length > 0 && (
           <ul className="mb-4 divide-y divide-borda rounded-xl border border-borda">
             {cartoes.map((c) => (
