@@ -1,5 +1,5 @@
 import { lerSessao } from "@/lib/sessao";
-import { PODE_VER } from "@/lib/acesso";
+import { PODE_EDITAR } from "@/lib/acesso";
 import { buscarUsuarioPorLogin } from "@/lib/repo";
 import { getDocumentoMeta, lerDocumento } from "@/lib/arquivos";
 
@@ -16,7 +16,7 @@ export async function GET(
 
   let permitido = doc.userId === sessao.userId;
   if (!permitido) {
-    const parceiroLogin = PODE_VER[sessao.login];
+    const parceiroLogin = PODE_EDITAR[sessao.login];
     if (parceiroLogin) {
       const parceiro = await buscarUsuarioPorLogin(parceiroLogin);
       permitido = !!parceiro && parceiro.id === doc.userId;

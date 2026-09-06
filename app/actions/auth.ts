@@ -1,12 +1,17 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { cadastroSchema, loginSchema } from "@/lib/validacao";
 import { camposDeErro, type EstadoForm } from "@/lib/forms";
 import { hashSenha, verificarSenha } from "@/lib/senha";
 import { buscarUsuarioPorLogin, criarUsuario } from "@/lib/repo";
 import { criarSessao, apagarSessao } from "@/lib/sessao";
-import { loginPermitido } from "@/lib/acesso";
+import { loginPermitido, NOME_COOKIE_AREA } from "@/lib/acesso";
+
+async function limparArea() {
+  (await cookies()).delete(NOME_COOKIE_AREA);
+}
 
 export async function cadastrar(
   _prev: EstadoForm,
@@ -54,6 +59,7 @@ export async function cadastrar(
     login: usuario.login,
     nome: usuario.nomeExibicao,
   });
+  await limparArea();
 
   redirect("/");
 }
@@ -88,6 +94,7 @@ export async function entrar(
     login: usuario.login,
     nome: usuario.nomeExibicao,
   });
+  await limparArea();
 
   const destino = String(formData.get("de") || "/");
   redirect(destino.startsWith("/") ? destino : "/");
@@ -95,5 +102,6 @@ export async function entrar(
 
 export async function sair(): Promise<void> {
   await apagarSessao();
+  await limparArea();
   redirect("/login");
 }

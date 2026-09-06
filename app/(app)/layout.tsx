@@ -1,24 +1,25 @@
-import { exigirSessao } from "@/lib/dal";
-import { parceiroVisivel } from "@/lib/acesso";
+import { usuarioAtivo, parceiroAdministravel } from "@/lib/contexto";
 import { buscarUsuarioPorLogin } from "@/lib/repo";
 import { mesAtualKey } from "@/lib/format";
 import { Nav } from "@/components/Nav";
+import { BannerArea } from "@/components/BannerArea";
 
 export default async function LayoutApp({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const sessao = await exigirSessao();
-  const loginParceiro = await parceiroVisivel();
-  const parceiro = loginParceiro
-    ? await buscarUsuarioPorLogin(loginParceiro)
-    : null;
+  const ativo = await usuarioAtivo();
+  const loginParceiro = await parceiroAdministravel();
+  const parceiro =
+    loginParceiro && !ativo.ehParceiro
+      ? await buscarUsuarioPorLogin(loginParceiro)
+      : null;
 
   return (
     <div className="flex min-h-full flex-col">
       <Nav
-        nome={sessao.nome}
+        nome={ativo.nomeReal}
         mesAtual={mesAtualKey()}
         parceiro={
           parceiro
@@ -26,6 +27,7 @@ export default async function LayoutApp({
             : null
         }
       />
+      {ativo.ehParceiro ? <BannerArea nome={ativo.nome} /> : null}
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6">
         {children}
       </main>
