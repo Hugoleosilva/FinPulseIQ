@@ -342,31 +342,57 @@ export function interpretarFaturaItau(texto: string): FaturaLida {
   }
   empurra(pendente);
 
-  out.transacoes = dedupTransacoes(out.transacoes);
+  // "Desc Antecipa Parcelas" / "Antecipação": a pessoa quitou parcelas
+  // adiantado e elas constam todas nesta fatura.
+  const temAntecipacao = /DESC ANTECIPA|ANTECIPA\w*\s+PARCELA/i.test(
+    norm(texto),
+  );
+  out.transacoes = dedupTransacoes(out.transacoes, temAntecipacao);
   return out;
 }
 
 /**
- * Remove duplicatas de compras PARCELADAS que aparecem tanto na fatura atual
- * quanto na lista de "próximas faturas" (layout co-branded). Só mexe em
- * parceladas — compras avulsas de mesmo valor podem ser legítimas (cartão
- * compartilhado, duas corridas de app etc.).
+ * Trata compras PARCELADAS que aparecem repetidas na fatura.
+ *
+ * Dois casos diferentes:
+ *  - **Vazamento de "próximas faturas"** (layout co-branded): a mesma parcela
+ *    aparece na fatura atual e na lista de próximas — aí fica só a atual (menor).
+ *  - **Antecipação de parcelas**: a pessoa quitou várias parcelas de uma vez e
+ *    todas ELAS constam nesta fatura (ex.: 08/12, 09/12 … 12/12). Aí manta-se
+ *    todas.
+ *
+ * Só considera antecipação quando a fatura tem indício disso (`temAntecipacao`,
+ * vindo de linhas "Desc Antecipa Parcelas"). Aí, se a maior parcela do grupo
+ * chega ao total ou há 3+ parcelas distintas, mantém todas. Senão fica só a
+ * menor. Parcelas com o mesmo número são sempre deduplicadas.
  */
-function dedupTransacoes(t: TransacaoFatura[]): TransacaoFatura[] {
+function dedupTransacoes(
+  t: TransacaoFatura[],
+  temAntecipacao = false,
+): TransacaoFatura[] {
   const chave = (x: TransacaoFatura) =>
     `${norm(x.descricao).replace(/\d+$/, "").slice(0, 16)}|${x.valor}|${x.parcela!.total}`;
 
-  const melhorParcela = new Map<string, number>();
+  const grupo = new Map<string, TransacaoFatura[]>();
   for (const x of t) {
     if (!x.parcela) continue;
     const k = chave(x);
-    const atual = melhorParcela.get(k);
-    if (atual == null || x.parcela.atual < atual) {
-      melhorParcela.set(k, x.parcela.atual);
-    }
+    (grupo.get(k) ?? grupo.set(k, []).get(k)!).push(x);
   }
 
-  const usados = new Set<string>();
+  const manter = new Map<string, Set<number>>(); // key -> parcelas.atual a manter
+  for (const [k, itens] of grupo) {
+    const atuais = [...new Set(itens.map((i) => i.parcela!.atual))].sort(
+      (a, b) => a - b,
+    );
+    const total = itens[0].parcela!.total;
+    const antecipacao =
+      temAntecipacao &&
+      (atuais[atuais.length - 1] >= total || atuais.length >= 3);
+    manter.set(k, new Set(antecipacao ? atuais : [atuais[0]]));
+  }
+
+  const usados = new Set<string>(); // key|atual já emitido
   const out: TransacaoFatura[] = [];
   for (const x of t) {
     if (!x.parcela) {
@@ -374,9 +400,10 @@ function dedupTransacoes(t: TransacaoFatura[]): TransacaoFatura[] {
       continue;
     }
     const k = chave(x);
-    if (x.parcela.atual !== melhorParcela.get(k)) continue; // é a versão "futura"
-    if (usados.has(k)) continue; // já pegou uma cópia dessa parcela
-    usados.add(k);
+    if (!manter.get(k)?.has(x.parcela.atual)) continue;
+    const marca = `${k}|${x.parcela.atual}`;
+    if (usados.has(marca)) continue;
+    usados.add(marca);
     out.push(x);
   }
   return out;

@@ -213,6 +213,50 @@ describe("interpretarFaturaItau — layout Platinum (limite na 1ª página)", ()
   });
 });
 
+// Antecipação de parcelas: a pessoa quitou várias parcelas de uma vez e todas
+// elas aparecem nesta fatura (08/12 … 12/12), com linhas "Desc Antecipa".
+const FATURA_ANTECIPA = `
+Cartão 5536.XXXX.XXXX.5875
+Vencimento: 09/09/2026
+Total desta fatura 320,00
+
+Lançamentos: compras e saques
+NOME DO TITULAR
+DATA ESTABELECIMENTO VALOR EM R$
+28/08 Desc Antecipa Parcelas -0,51
+28/08 Desc Antecipa Parcelas -1,20
+30/01 VFITNESS 08/12 44,00
+lazer RECIFE
+30/01 VFITNESS 09/12 44,00
+lazer RECIFE
+30/01 VFITNESS 10/12 44,00
+lazer RECIFE
+30/01 VFITNESS 11/12 44,00
+lazer RECIFE
+30/01 VFITNESS 12/12 44,00
+lazer RECIFE
+12/06 CRA QUARTA R*1 03/04 50,00
+outros RECIFE
+12/06 CRA QUARTA R*1 04/04 50,00
+outros RECIFE
+Total dos lançamentos atuais 320,00
+`;
+
+describe("interpretarFaturaItau — antecipação de parcelas", () => {
+  const f = interpretarFaturaItau(FATURA_ANTECIPA);
+
+  it("mantém todas as parcelas antecipadas do mesmo item", () => {
+    const vf = f.transacoes.filter((t) => t.descricao.includes("VFITNESS"));
+    expect(vf).toHaveLength(5);
+    expect(vf.reduce((a, t) => a + t.valor, 0)).toBeCloseTo(220, 2);
+  });
+
+  it("mantém as duas parcelas antecipadas que fecham o total", () => {
+    const cra = f.transacoes.filter((t) => t.descricao.includes("CRA QUARTA"));
+    expect(cra).toHaveLength(2);
+  });
+});
+
 describe("interpretarFaturaItau — layout co-branded", () => {
   const f = interpretarFaturaItau(FATURA_COBRAND);
 
