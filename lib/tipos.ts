@@ -37,6 +37,8 @@ export interface Receita {
   valor: number;
   dia: number; // dia do mês (1 a 31)
   tipo: TipoReceita;
+  /** Marcada manualmente como já recebida (dinheiro na conta). */
+  recebido?: boolean;
   /** Preenchido quando a receita foi cadastrada pelo detalhamento do holerite.
    *  `valor` acima já é o líquido (proventos - descontos). */
   detalhe?: {
@@ -58,6 +60,8 @@ export interface Despesa {
   natureza: Natureza;
   recorrente: boolean; // mantido em sincronia com natureza === "fixa"
   parcela?: Parcela | null;
+  /** Marcada manualmente como já paga (saiu da conta). */
+  pago?: boolean;
 }
 
 export interface Mes {

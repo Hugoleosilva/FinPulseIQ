@@ -1,7 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { removerReceita } from "@/app/actions/lancamentos";
+import {
+  removerReceita,
+  alternarReceitaRecebida,
+} from "@/app/actions/lancamentos";
 import { formatBRL } from "@/lib/format";
 import { BotaoExcluir } from "@/components/BotaoExcluir";
 import { FormReceita } from "./FormReceita";
@@ -51,7 +54,14 @@ export function ListaReceitas({
               <>
                 <div className="flex items-center justify-between gap-3">
                   <span>
-                    <span className="font-semibold">{r.descricao}</span>
+                    <span className="font-semibold">
+                      {r.descricao}
+                      {r.recebido ? (
+                        <span className="ml-2 rounded bg-ok/15 px-1.5 py-0.5 text-xs font-bold text-ok">
+                          recebido
+                        </span>
+                      ) : null}
+                    </span>
                     <span className="block text-sm text-texto-suave">
                       dia {r.dia}
                       {r.tipo === "fixa" ? " · fixo todo mês" : ""}
@@ -61,6 +71,20 @@ export function ListaReceitas({
                     <span className="tabular font-bold text-ok">
                       {formatBRL(r.valor)}
                     </span>
+                    <form
+                      action={alternarReceitaRecebida.bind(null, chaveMes, r.id)}
+                    >
+                      <button
+                        type="submit"
+                        className={`rounded-lg px-2 py-1 text-sm font-semibold ${
+                          r.recebido
+                            ? "text-texto-suave hover:bg-fundo"
+                            : "text-ok hover:bg-ok/10"
+                        }`}
+                      >
+                        {r.recebido ? "Desmarcar" : "Marcar recebido"}
+                      </button>
+                    </form>
                     <button
                       onClick={() => setEditId(r.id)}
                       className="rounded-lg px-2 py-1 text-sm font-semibold text-acento-escuro hover:bg-acento/10"

@@ -302,6 +302,22 @@ describe("andamentoMes", () => {
     expect(a.receitaPrevista).toBe(0);
     expect(a.despesaPrevista).toBe(0);
   });
+
+  it("marcação manual de pago/recebido vence o palpite pelo dia", () => {
+    const mm: Mes = {
+      ...m,
+      receitas: [{ ...m.receitas[0], recebido: true }, m.receitas[1]],
+      despesas: [
+        { ...m.despesas[0], pago: false }, // dia 1, mas ainda não paguei
+        { ...m.despesas[1], pago: true }, // dia 25, mas já paguei
+      ],
+    };
+    const a = andamentoMes(mm, { ano: 2026, mes: 9, dia: 5 });
+    expect(a.temMarcacaoManual).toBe(true);
+    expect(a.receitaRealizada).toBeCloseTo(1010.88 + 3757.29, 2);
+    expect(a.despesaRealizada).toBeCloseTo(500, 2); // só a marcada como paga
+    expect(a.despesaPrevista).toBeCloseTo(1672.85, 2);
+  });
 });
 
 describe("nivelSaude", () => {

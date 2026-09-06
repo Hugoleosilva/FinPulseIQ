@@ -1,7 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { removerDespesa } from "@/app/actions/lancamentos";
+import {
+  removerDespesa,
+  alternarDespesaPaga,
+} from "@/app/actions/lancamentos";
 import { emojiCategoria, ROTULO_ESSENCIALIDADE } from "@/lib/categorias";
 import { formatBRL } from "@/lib/format";
 import { BotaoExcluir } from "@/components/BotaoExcluir";
@@ -32,10 +35,23 @@ export function ListaDespesas({
     );
   }
 
+  const totalPago = despesas
+    .filter((d) => d.pago)
+    .reduce((a, d) => a + d.valor, 0);
+  const totalGeral = despesas.reduce((a, d) => a + d.valor, 0);
+  const algumMarcado = despesas.some((d) => d.pago != null);
+
   return (
-    <ul className="divide-y divide-borda rounded-xl border border-borda">
-      {despesas.map((d) => (
-        <li key={d.id} className="p-3">
+    <div className="flex flex-col gap-2">
+      {algumMarcado ? (
+        <p className="text-sm text-texto-suave">
+          Já pago: <strong>{formatBRL(totalPago)}</strong> · Falta pagar:{" "}
+          <strong>{formatBRL(totalGeral - totalPago)}</strong>
+        </p>
+      ) : null}
+      <ul className="divide-y divide-borda rounded-xl border border-borda">
+        {despesas.map((d) => (
+          <li key={d.id} className="p-3">
           {editId === d.id ? (
             <FormDespesa
               chaveMes={chaveMes}
@@ -48,6 +64,11 @@ export function ListaDespesas({
               <span className="min-w-0">
                 <span className="font-semibold">
                   {emojiCategoria(d.categoria)} {d.descricao}
+                  {d.pago ? (
+                    <span className="ml-2 rounded bg-ok/15 px-1.5 py-0.5 text-xs font-bold text-ok">
+                      pago
+                    </span>
+                  ) : null}
                 </span>
                 <span className="block text-sm text-texto-suave">
                   {d.categoria} · {d.subcategoria} ·{" "}
@@ -61,9 +82,25 @@ export function ListaDespesas({
                 </span>
               </span>
               <span className="flex shrink-0 items-center gap-1">
-                <span className="tabular font-bold text-texto">
+                <span
+                  className={`tabular font-bold ${
+                    d.pago ? "text-texto-suave line-through" : "text-texto"
+                  }`}
+                >
                   {formatBRL(d.valor)}
                 </span>
+                <form action={alternarDespesaPaga.bind(null, chaveMes, d.id)}>
+                  <button
+                    type="submit"
+                    className={`rounded-lg px-2 py-1 text-sm font-semibold ${
+                      d.pago
+                        ? "text-texto-suave hover:bg-fundo"
+                        : "text-ok hover:bg-ok/10"
+                    }`}
+                  >
+                    {d.pago ? "Desmarcar" : "Marcar pago"}
+                  </button>
+                </form>
                 <button
                   onClick={() => setEditId(d.id)}
                   className="rounded-lg px-2 py-1 text-sm font-semibold text-acento-escuro hover:bg-acento/10"
@@ -79,6 +116,7 @@ export function ListaDespesas({
           )}
         </li>
       ))}
-    </ul>
+      </ul>
+    </div>
   );
 }

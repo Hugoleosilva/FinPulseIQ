@@ -11,7 +11,8 @@ export function AvisoAndamento({
   nomeMes: string;
 }) {
   if (!andamento.emAndamento) return null;
-  const { receitaPrevista, despesaPrevista, saldoHoje } = andamento;
+  const { receitaPrevista, despesaPrevista, saldoHoje, temMarcacaoManual } =
+    andamento;
   if (receitaPrevista <= 0 && despesaPrevista <= 0) return null;
 
   return (
@@ -21,7 +22,11 @@ export function AvisoAndamento({
     >
       <p>
         Os números abaixo são a <strong>projeção do mês inteiro</strong>. Parte
-        ainda <strong>não aconteceu</strong>:
+        ainda <strong>não aconteceu</strong>
+        {temMarcacaoManual
+          ? " (contando o que você marcou como pago/recebido)"
+          : ""}
+        :
       </p>
       <ul className="ml-4 mt-1 list-disc space-y-0.5">
         {receitaPrevista > 0 ? (
@@ -32,8 +37,10 @@ export function AvisoAndamento({
         ) : null}
         {despesaPrevista > 0 ? (
           <li>
-            ainda vai sair: <strong>{formatBRL(despesaPrevista)}</strong> em
-            contas com vencimento à frente
+            ainda vai sair: <strong>{formatBRL(despesaPrevista)}</strong>
+            {temMarcacaoManual
+              ? " em contas ainda não pagas"
+              : " em contas com vencimento à frente"}
           </li>
         ) : null}
       </ul>

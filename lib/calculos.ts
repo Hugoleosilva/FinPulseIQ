@@ -214,6 +214,20 @@ export interface AndamentoMes {
   despesaPrevista: number;
   /** saldoInicial + o que já entrou − o que já saiu (estimativa do saldo de hoje). */
   saldoHoje: number;
+  /** Alguém marcou manualmente receitas/despesas como recebidas/pagas. */
+  temMarcacaoManual: boolean;
+}
+
+/** Um lançamento já aconteceu? Marcação manual (pago/recebido) vence o palpite
+ *  pelo dia do mês. */
+function jaAconteceu(
+  item: { dia: number },
+  marca: boolean | undefined,
+  diaRef: number,
+): boolean {
+  if (marca === true) return true;
+  if (marca === false) return false;
+  return item.dia <= diaRef;
 }
 
 export function andamentoMes(
@@ -224,24 +238,30 @@ export function andamentoMes(
   const emAndamento = mes.key === mesKey;
   const dia = emAndamento ? hoje.dia : mes.key < mesKey ? 31 : 0;
 
-  const ate = (arr: { dia: number; valor: number }[]) =>
-    soma(arr.filter((x) => x.dia <= dia).map((x) => x.valor));
-  const depois = (arr: { dia: number; valor: number }[]) =>
-    soma(arr.filter((x) => x.dia > dia).map((x) => x.valor));
+  const totR = soma(mes.receitas.map((r) => r.valor));
+  const totD = soma(mes.despesas.map((d) => d.valor));
 
-  const receitaRealizada = ate(mes.receitas);
-  const despesaRealizada = ate(mes.despesas);
+  const receitaRealizada = soma(
+    mes.receitas
+      .filter((r) => jaAconteceu(r, r.recebido, dia))
+      .map((r) => r.valor),
+  );
+  const despesaRealizada = soma(
+    mes.despesas.filter((d) => jaAconteceu(d, d.pago, dia)).map((d) => d.valor),
+  );
 
+  const cent = (n: number) => Math.round(n * 100) / 100;
   return {
     emAndamento,
     diaDeHoje: dia,
     receitaRealizada,
-    receitaPrevista: depois(mes.receitas),
+    receitaPrevista: cent(totR - receitaRealizada),
     despesaRealizada,
-    despesaPrevista: depois(mes.despesas),
-    saldoHoje:
-      Math.round((mes.saldoInicial + receitaRealizada - despesaRealizada) * 100) /
-      100,
+    despesaPrevista: cent(totD - despesaRealizada),
+    saldoHoje: cent(mes.saldoInicial + receitaRealizada - despesaRealizada),
+    temMarcacaoManual:
+      mes.receitas.some((r) => r.recebido != null) ||
+      mes.despesas.some((d) => d.pago != null),
   };
 }
 

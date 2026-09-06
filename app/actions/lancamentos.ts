@@ -221,7 +221,7 @@ export async function editarSalario(
     return { ok: false, erro: "Receita não encontrada." };
   }
   const receitas = mes.receitas.map((r) =>
-    r.id === id ? { id, ...res.receita } : r,
+    r.id === id ? { id, ...res.receita, recebido: r.recebido } : r,
   );
   await salvarMes(userId, key, { receitas });
   await revalida(key, "editou o salário");
@@ -397,11 +397,37 @@ export async function editarDespesa(
     return { ok: false, erro: "Gasto não encontrado." };
   }
   const despesas = mes.despesas.map((x) =>
-    x.id === id ? { id, ...res.campos } : x,
+    x.id === id ? { id, ...res.campos, pago: x.pago } : x,
   );
   await salvarMes(userId, key, { despesas });
   await revalida(key, "editou um gasto");
   return { ok: true, mensagem: "Gasto atualizado." };
+}
+
+export async function alternarDespesaPaga(
+  key: string,
+  id: string,
+): Promise<void> {
+  const { userId } = await exigirSessao();
+  const mes = await getMes(userId, key);
+  const despesas = mes.despesas.map((d) =>
+    d.id === id ? { ...d, pago: !d.pago } : d,
+  );
+  await salvarMes(userId, key, { despesas });
+  await revalida(key, "marcou um gasto como pago/não pago");
+}
+
+export async function alternarReceitaRecebida(
+  key: string,
+  id: string,
+): Promise<void> {
+  const { userId } = await exigirSessao();
+  const mes = await getMes(userId, key);
+  const receitas = mes.receitas.map((r) =>
+    r.id === id ? { ...r, recebido: !r.recebido } : r,
+  );
+  await salvarMes(userId, key, { receitas });
+  await revalida(key, "marcou uma receita como recebida/não recebida");
 }
 
 export async function removerDespesa(key: string, id: string): Promise<void> {
