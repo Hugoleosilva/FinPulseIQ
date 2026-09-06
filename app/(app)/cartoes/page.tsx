@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { exigirSessao } from "@/lib/dal";
 import { listarCartoes, listarCompromissos } from "@/lib/repo";
 import { listarDocumentos } from "@/lib/arquivos";
@@ -53,20 +54,26 @@ export default async function PaginaCartoes() {
                 className="flex flex-wrap items-center justify-between gap-3 p-3"
               >
                 <span>
-                  <span className="font-semibold">
+                  <Link
+                    href={`/cartoes/${c.id}`}
+                    className="font-semibold text-acento-escuro underline decoration-transparent hover:decoration-inherit"
+                  >
                     {c.nome}
-                    {c.compartilhado ? (
-                      <span className="ml-2 rounded bg-acento/10 px-1.5 py-0.5 text-xs font-bold text-acento-escuro">
-                        compartilhado{c.titularFatura ? ` · ${c.titularFatura}` : ""}
-                      </span>
-                    ) : null}
-                  </span>
+                  </Link>
+                  {c.compartilhado ? (
+                    <span className="ml-2 rounded bg-acento/10 px-1.5 py-0.5 text-xs font-bold text-acento-escuro">
+                      compartilhado{c.titularFatura ? ` · ${c.titularFatura}` : ""}
+                    </span>
+                  ) : null}
                   <span className="block text-sm text-texto-suave">
                     Limite {formatBRL(c.limite)} · fecha dia {c.diaFechamento} ·
                     vence dia {c.diaVencimento}
                   </span>
                 </span>
                 <span className="flex items-center gap-2">
+                  <BotaoLink href={`/cartoes/${c.id}`} variante="secundario">
+                    Ver
+                  </BotaoLink>
                   <BotaoLink
                     href={`/cartoes/${c.id}/fatura`}
                     variante="secundario"
