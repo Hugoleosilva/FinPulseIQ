@@ -40,7 +40,7 @@ export function Nav({
 }: {
   nome: string;
   mesAtual: string;
-  parceiro: { login: string; nome: string } | null;
+  parceiro: { login: string; nome: string; alertas: number } | null;
 }) {
   const pathname = usePathname() ?? "";
   const [aberto, setAberto] = useState(false);
@@ -77,8 +77,13 @@ export function Nav({
         <div className="hidden items-center gap-3 lg:flex">
           {parceiro ? (
             <form action={entrarNaArea.bind(null, parceiro.login)}>
-              <button className="rounded-lg border border-acento/40 px-3 py-1.5 text-sm font-semibold text-acento-escuro hover:bg-acento/5">
+              <button className="relative rounded-lg border border-acento/40 px-3 py-1.5 text-sm font-semibold text-acento-escuro hover:bg-acento/5">
                 Área de {parceiro.nome}
+                {parceiro.alertas > 0 ? (
+                  <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-perigo px-1 text-xs font-bold text-white">
+                    {parceiro.alertas}
+                  </span>
+                ) : null}
               </button>
             </form>
           ) : null}
@@ -118,6 +123,7 @@ export function Nav({
             >
               <button className="font-semibold text-acento-escuro underline">
                 Ir para a área de {parceiro.nome}
+                {parceiro.alertas > 0 ? ` (${parceiro.alertas} nova(s))` : ""}
               </button>
             </form>
           ) : null}

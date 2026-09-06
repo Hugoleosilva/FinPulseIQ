@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { exigirSessao } from "@/lib/dal";
 import { getMes, salvarMes } from "@/lib/repo";
 import { parsePlanilha } from "@/lib/planilha";
+import { logAlteracao } from "@/lib/atividade";
 import type { Receita, Despesa } from "@/lib/tipos";
 
 export type EstadoImport =
@@ -70,6 +71,7 @@ export async function importarPlanilha(
   revalidatePath(`/mes/${key}`);
   revalidatePath(`/mes/${key}/lancar`);
   revalidatePath(`/mes/${key}/diagnostico`);
+  await logAlteracao(`importou dados de uma planilha (${key})`);
 
   return {
     ok: true,

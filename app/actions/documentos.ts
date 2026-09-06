@@ -10,6 +10,7 @@ import {
 } from "@/lib/arquivos";
 import { documentoMetaSchema } from "@/lib/validacao";
 import { camposDeErro, type EstadoForm } from "@/lib/forms";
+import { logAlteracao } from "@/lib/atividade";
 
 export async function enviarDocumento(
   _prev: EstadoForm,
@@ -46,6 +47,7 @@ export async function enviarDocumento(
 
   await salvarDocumento(userId, parsed.data, arquivo);
   revalidatePath("/cartoes");
+  await logAlteracao("guardou um documento");
   return { ok: true, mensagem: "Documento guardado." };
 }
 
@@ -53,4 +55,5 @@ export async function apagarDocumentoAction(id: string): Promise<void> {
   const { userId } = await exigirSessao();
   await apagarDocumento(userId, id);
   revalidatePath("/cartoes");
+  await logAlteracao("apagou um documento");
 }

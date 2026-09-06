@@ -13,7 +13,8 @@ export interface UsuarioAtivo {
   nome: string;
   /** true quando a pessoa logada está administrando a área do parceiro. */
   ehParceiro: boolean;
-  /** Login de quem realmente está logado. */
+  /** Identidade real de quem está logado. */
+  userIdReal: string;
   loginReal: string;
   nomeReal: string;
 }
@@ -26,28 +27,32 @@ export const usuarioAtivo = cache(async (): Promise<UsuarioAtivo> => {
   const sessao = await lerSessao();
   if (!sessao) redirect("/login");
 
+  const base = {
+    userIdReal: sessao.userId,
+    loginReal: sessao.login,
+    nomeReal: sessao.nome,
+  };
+
   const area = (await cookies()).get(NOME_COOKIE_AREA)?.value?.toLowerCase();
   if (area && area !== sessao.login && PODE_EDITAR[sessao.login] === area) {
     const parceiro = await buscarUsuarioPorLogin(area);
     if (parceiro) {
       return {
+        ...base,
         userId: parceiro.id,
         login: parceiro.login,
         nome: parceiro.nomeExibicao,
         ehParceiro: true,
-        loginReal: sessao.login,
-        nomeReal: sessao.nome,
       };
     }
   }
 
   return {
+    ...base,
     userId: sessao.userId,
     login: sessao.login,
     nome: sessao.nome,
     ehParceiro: false,
-    loginReal: sessao.login,
-    nomeReal: sessao.nome,
   };
 });
 

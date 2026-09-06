@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { lerSessao } from "@/lib/sessao";
 import { PODE_EDITAR, NOME_COOKIE_AREA } from "@/lib/acesso";
+import { marcarParceiroVisto } from "@/lib/atividade";
 
 export async function entrarNaArea(login: string): Promise<void> {
   const sessao = await lerSessao();
@@ -19,6 +20,8 @@ export async function entrarNaArea(login: string): Promise<void> {
     path: "/",
     maxAge: 60 * 60 * 24 * 7,
   });
+  // entrar na área do parceiro = "já vi as novidades dele"
+  await marcarParceiroVisto(sessao.userId);
   redirect("/");
 }
 

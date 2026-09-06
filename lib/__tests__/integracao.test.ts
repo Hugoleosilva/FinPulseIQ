@@ -113,4 +113,32 @@ describe("fluxo completo com banco em memória", () => {
     const meses = await listarMeses(ang.id);
     expect(meses).toHaveLength(0);
   });
+
+  it("presença: marca ativo e expira", async () => {
+    const { registrarPresenca, estaAtivo, limparPresenca } = await import(
+      "../presenca"
+    );
+    await registrarPresenca("u-presenca");
+    expect(await estaAtivo("u-presenca")).toBe(true);
+    expect(await estaAtivo("outro")).toBe(false);
+    await limparPresenca("u-presenca");
+    expect(await estaAtivo("u-presenca")).toBe(false);
+  });
+
+  it("atividade: conta alterações não vistas e zera ao marcar visto", async () => {
+    const { col } = await import("../db");
+    const c = await col("atividades");
+    await c.insertMany([
+      { id: "a1", userId: "area-x", autor: "angelica", acao: "adicionou", quando: Date.now() },
+      { id: "a2", userId: "area-x", autor: "angelica", acao: "editou", quando: Date.now() },
+    ]);
+    const { alteracoesNaoVistas, marcarParceiroVisto } = await import(
+      "../atividade"
+    );
+    let r = await alteracoesNaoVistas("hugo-id", "area-x");
+    expect(r.quantidade).toBe(2);
+    await marcarParceiroVisto("hugo-id");
+    r = await alteracoesNaoVistas("hugo-id", "area-x");
+    expect(r.quantidade).toBe(0);
+  });
 });

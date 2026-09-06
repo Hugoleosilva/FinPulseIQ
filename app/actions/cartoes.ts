@@ -10,9 +10,11 @@ import {
 } from "@/lib/repo";
 import { cartaoSchema, compromissoSchema } from "@/lib/validacao";
 import { camposDeErro, type EstadoForm } from "@/lib/forms";
+import { logAlteracao } from "@/lib/atividade";
 
-function revalida() {
+async function revalida(acao: string) {
   revalidatePath("/cartoes");
+  await logAlteracao(acao);
 }
 
 export async function salvarCartaoAction(
@@ -32,14 +34,14 @@ export async function salvarCartaoAction(
     return { ok: false, campos: camposDeErro(parsed.error) };
   }
   await salvarCartao(userId, parsed.data);
-  revalida();
+  await revalida("mexeu num cartão");
   return { ok: true, mensagem: "Cartão salvo." };
 }
 
 export async function apagarCartaoAction(id: string): Promise<void> {
   const { userId } = await exigirSessao();
   await apagarCartao(userId, id);
-  revalida();
+  await revalida("apagou um cartão");
 }
 
 export async function salvarCompromissoAction(
@@ -59,12 +61,12 @@ export async function salvarCompromissoAction(
     return { ok: false, campos: camposDeErro(parsed.error) };
   }
   await salvarCompromisso(userId, parsed.data);
-  revalida();
+  await revalida("mexeu num compromisso futuro");
   return { ok: true, mensagem: "Compromisso salvo." };
 }
 
 export async function apagarCompromissoAction(id: string): Promise<void> {
   const { userId } = await exigirSessao();
   await apagarCompromisso(userId, id);
-  revalida();
+  await revalida("apagou um compromisso futuro");
 }

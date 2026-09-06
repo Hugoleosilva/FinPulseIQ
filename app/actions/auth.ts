@@ -6,11 +6,20 @@ import { cadastroSchema, loginSchema } from "@/lib/validacao";
 import { camposDeErro, type EstadoForm } from "@/lib/forms";
 import { hashSenha, verificarSenha } from "@/lib/senha";
 import { buscarUsuarioPorLogin, criarUsuario } from "@/lib/repo";
-import { criarSessao, apagarSessao } from "@/lib/sessao";
-import { loginPermitido, NOME_COOKIE_AREA } from "@/lib/acesso";
+import { criarSessao, apagarSessao, lerSessao } from "@/lib/sessao";
+import { loginPermitido, NOME_COOKIE_AREA, PODE_EDITAR } from "@/lib/acesso";
+import { estaAtivo, limparPresenca } from "@/lib/presenca";
 
 async function limparArea() {
   (await cookies()).delete(NOME_COOKIE_AREA);
+}
+
+/** Login que administra o `login` dado (ex.: "hugo" administra "angelica"). */
+function administradorDe(login: string): string | null {
+  for (const [admin, alvo] of Object.entries(PODE_EDITAR)) {
+    if (alvo === login) return admin;
+  }
+  return null;
 }
 
 export async function cadastrar(
@@ -89,6 +98,22 @@ export async function entrar(
     };
   }
 
+  // Login exclusivo: se quem administra esta conta está online, ela espera.
+  const admin = administradorDe(login);
+  if (admin) {
+    const jaLogado = await lerSessao();
+    const ehOProprioAdmin = jaLogado?.login === admin;
+    if (!ehOProprioAdmin) {
+      const adminUser = await buscarUsuarioPorLogin(admin);
+      if (adminUser && (await estaAtivo(adminUser.id))) {
+        return {
+          ok: false,
+          erro: `${adminUser.nomeExibicao} está fazendo uma manutenção no sistema agora. Tente de novo em 5 minutos.`,
+        };
+      }
+    }
+  }
+
   await criarSessao({
     userId: usuario.id,
     login: usuario.login,
@@ -101,6 +126,8 @@ export async function entrar(
 }
 
 export async function sair(): Promise<void> {
+  const sessao = await lerSessao();
+  if (sessao) await limparPresenca(sessao.userId);
   await apagarSessao();
   await limparArea();
   redirect("/login");

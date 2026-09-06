@@ -6,6 +6,7 @@ import { exigirSessao } from "@/lib/dal";
 import { getMes, salvarMes, listarCartoes } from "@/lib/repo";
 import { lerFaturaPDF, type FaturaLida } from "@/lib/fatura";
 import { NOMES_CATEGORIAS, getCategoria } from "@/lib/categorias";
+import { logAlteracao } from "@/lib/atividade";
 import type { Despesa } from "@/lib/tipos";
 
 export type EstadoFatura =
@@ -115,6 +116,7 @@ export async function importarFatura(
   revalidatePath(`/mes/${key}`);
   revalidatePath(`/mes/${key}/diagnostico`);
   revalidatePath("/cartoes");
+  await logAlteracao(`importou ${novas.length} gasto(s) da fatura do cartão (${key})`);
   return { ok: true, quantidade: novas.length };
 }
 
@@ -163,5 +165,6 @@ export async function lancarFaturaTotal(
   revalidatePath(`/mes/${key}`);
   revalidatePath(`/mes/${key}/diagnostico`);
   revalidatePath("/cartoes");
+  await logAlteracao(`lançou a fatura de um cartão (${key})`);
   return { ok: true };
 }

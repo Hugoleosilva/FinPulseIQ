@@ -33,6 +33,11 @@ export async function getDb(): Promise<Db> {
       db.collection("cards").createIndex({ userId: 1 }),
       db.collection("compromissos").createIndex({ userId: 1 }),
       db.collection("documentos").createIndex({ userId: 1, criadoEm: -1 }),
+      db.collection("atividades").createIndex({ userId: 1, quando: -1 }),
+      db.collection("presenca").createIndex({ userId: 1 }, { unique: true }),
+      db
+        .collection("marcadores")
+        .createIndex({ userId: 1, chave: 1 }, { unique: true }),
     ]).catch((e) => {
       indicesCriados = false;
       throw e;

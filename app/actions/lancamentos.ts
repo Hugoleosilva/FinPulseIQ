@@ -11,14 +11,16 @@ import {
 } from "@/lib/validacao";
 import { camposDeErro, primeiroErroGeral, type EstadoForm } from "@/lib/forms";
 import { deslocaMes } from "@/lib/format";
+import { logAlteracao } from "@/lib/atividade";
 import { lerHoleritePDF, type HoleriteLido } from "@/lib/holerite";
 import type { Despesa, Receita, ItemHolerite } from "@/lib/tipos";
 
-function revalida(key: string) {
+async function revalida(key: string, acao: string) {
   revalidatePath(`/mes/${key}`);
   revalidatePath(`/mes/${key}/lancar`);
   revalidatePath(`/mes/${key}/diagnostico`);
   revalidatePath("/historico");
+  await logAlteracao(`${acao} (${key})`);
 }
 
 export async function definirSaldoInicial(
@@ -34,7 +36,7 @@ export async function definirSaldoInicial(
     return { ok: false, erro: primeiroErroGeral(parsed.error) };
   }
   await salvarMes(userId, key, { saldoInicial: parsed.data.saldoInicial });
-  revalida(key);
+  await revalida(key, "ajustou o saldo inicial");
   return { ok: true, mensagem: "Saldo inicial salvo." };
 }
 
@@ -56,7 +58,7 @@ export async function adicionarReceita(
   const mes = await getMes(userId, key);
   const nova: Receita = { id: randomUUID(), ...parsed.data };
   await salvarMes(userId, key, { receitas: [...mes.receitas, nova] });
-  revalida(key);
+  await revalida(key, "adicionou uma receita");
   return { ok: true, mensagem: "Receita adicionada." };
 }
 
@@ -83,7 +85,7 @@ export async function editarReceita(
     r.id === id ? { ...r, ...parsed.data, detalhe: null } : r,
   );
   await salvarMes(userId, key, { receitas });
-  revalida(key);
+  await revalida(key, "editou uma receita");
   return { ok: true, mensagem: "Receita atualizada." };
 }
 
@@ -200,7 +202,7 @@ export async function adicionarSalario(
   await salvarMes(userId, key, {
     receitas: [...mes.receitas, { id: randomUUID(), ...res.receita }],
   });
-  revalida(key);
+  await revalida(key, "registrou o salário");
   return { ok: true, mensagem: "Salário registrado." };
 }
 
@@ -222,7 +224,7 @@ export async function editarSalario(
     r.id === id ? { id, ...res.receita } : r,
   );
   await salvarMes(userId, key, { receitas });
-  revalida(key);
+  await revalida(key, "editou o salário");
   return { ok: true, mensagem: "Salário atualizado." };
 }
 
@@ -292,7 +294,7 @@ export async function copiarRecorrentes(
     receitas: [...mes.receitas, ...novasReceitas],
     despesas: [...mes.despesas, ...novasDespesas],
   });
-  revalida(key);
+  await revalida(key, "copiou lançamentos do mês anterior");
   return {
     ok: true,
     receitas: novasReceitas.length,
@@ -306,7 +308,7 @@ export async function removerReceita(key: string, id: string): Promise<void> {
   await salvarMes(userId, key, {
     receitas: mes.receitas.filter((r) => r.id !== id),
   });
-  revalida(key);
+  await revalida(key, "apagou uma receita");
 }
 
 function camposDaDespesa(
@@ -376,7 +378,7 @@ export async function adicionarDespesa(
   const mes = await getMes(userId, key);
   const nova: Despesa = { id: randomUUID(), ...res.campos };
   await salvarMes(userId, key, { despesas: [...mes.despesas, nova] });
-  revalida(key);
+  await revalida(key, "adicionou um gasto");
   return { ok: true, mensagem: "Gasto adicionado." };
 }
 
@@ -398,7 +400,7 @@ export async function editarDespesa(
     x.id === id ? { id, ...res.campos } : x,
   );
   await salvarMes(userId, key, { despesas });
-  revalida(key);
+  await revalida(key, "editou um gasto");
   return { ok: true, mensagem: "Gasto atualizado." };
 }
 
@@ -408,5 +410,5 @@ export async function removerDespesa(key: string, id: string): Promise<void> {
   await salvarMes(userId, key, {
     despesas: mes.despesas.filter((d) => d.id !== id),
   });
-  revalida(key);
+  await revalida(key, "apagou um gasto");
 }
