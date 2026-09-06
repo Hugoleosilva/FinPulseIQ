@@ -105,14 +105,18 @@ export default async function PaginaCartoes() {
                     <BotaoLink href={`/cartoes/${c.id}`} variante="secundario">
                       {sit.enviada ? "Ver / editar" : "Ver"}
                     </BotaoLink>
-                    <BotaoLink
-                      href={`/cartoes/${c.id}/fatura`}
-                      variante="secundario"
-                    >
-                      {sit.fechada && !sit.enviada
-                        ? "Enviar fatura"
-                        : "Lançar fatura"}
-                    </BotaoLink>
+                    {sit.enviada ? (
+                      <span className="rounded-lg border border-ok/30 bg-ok/10 px-3 py-2 text-sm font-bold text-ok">
+                        ✓ Fatura enviada
+                      </span>
+                    ) : (
+                      <BotaoLink
+                        href={`/cartoes/${c.id}/fatura`}
+                        variante="secundario"
+                      >
+                        {sit.fechada ? "Enviar fatura" : "Lançar fatura"}
+                      </BotaoLink>
+                    )}
                     <BotaoExcluir
                       acao={apagarCartaoAction.bind(null, c.id)}
                       rotulo="Apagar cartão"

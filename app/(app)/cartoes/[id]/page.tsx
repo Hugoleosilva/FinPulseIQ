@@ -9,7 +9,7 @@ import { Card, TituloSecao, Aviso, BotaoLink } from "@/components/ui";
 import { Colapsavel } from "@/components/Colapsavel";
 import { BotaoExcluir } from "@/components/BotaoExcluir";
 import { FaturasCartao, type FaturaTotalItem } from "./FaturasCartao";
-import { apagarFaturaDoMes } from "@/app/actions/fatura";
+import { apagarFaturaDoMes, apagarEReenviarFatura } from "@/app/actions/fatura";
 import type { Despesa } from "@/lib/tipos";
 
 const CAT_FATURA = "Fatura de cartão (sem detalhar)";
@@ -189,18 +189,26 @@ function MesDoCartao({
 
   return (
     <Card>
-      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-xl font-bold">{nomeMesTitulo(chave)}</h2>
-        <span className="flex items-center gap-3">
-          <span className="tabular text-xl font-extrabold">
-            {formatBRL(total)}
-          </span>
-          <BotaoExcluir
-            acao={apagarFaturaDoMes.bind(null, cartaoId, chave)}
-            rotulo="Apagar fatura do mês"
-            confirmar={`Apagar TODOS os ${gastos.length} lançamento(s) deste cartão em ${nomeMesTitulo(chave)}? Use se a fatura foi enviada errada (ex.: dados de outro cartão).`}
-          />
+        <span className="tabular text-xl font-extrabold">
+          {formatBRL(total)}
         </span>
+      </div>
+
+      <div className="mb-3 flex flex-wrap gap-2">
+        <BotaoExcluir
+          acao={apagarEReenviarFatura.bind(null, cartaoId, chave)}
+          rotulo="Apagar e enviar de novo"
+          forte
+          confirmar={`Apagar os ${gastos.length} lançamento(s) deste cartão em ${nomeMesTitulo(chave)} e ir para a tela de enviar a fatura de novo?`}
+        />
+        <BotaoExcluir
+          acao={apagarFaturaDoMes.bind(null, cartaoId, chave)}
+          rotulo="Só apagar a fatura do mês"
+          forte
+          confirmar={`Apagar TODOS os ${gastos.length} lançamento(s) deste cartão em ${nomeMesTitulo(chave)}? Use se a fatura foi enviada errada (ex.: dados de outro cartão).`}
+        />
       </div>
 
       <ul className="mb-4 flex flex-col gap-2">

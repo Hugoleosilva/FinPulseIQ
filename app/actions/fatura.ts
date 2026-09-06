@@ -2,6 +2,7 @@
 
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { exigirSessao } from "@/lib/dal";
 import { getMes, salvarMes, listarCartoes } from "@/lib/repo";
 import { lerFaturaPDF, type FaturaLida } from "@/lib/fatura";
@@ -215,6 +216,20 @@ export async function apagarFaturaDoMes(
   cartaoId: string,
   key: string,
 ): Promise<void> {
+  await apagarLancamentosDoCartaoNoMes(cartaoId, key);
+  revalidatePath(`/cartoes/${cartaoId}`);
+}
+
+/** Apaga os lançamentos do cartão no mês e leva para a tela de enviar de novo. */
+export async function apagarEReenviarFatura(
+  cartaoId: string,
+  key: string,
+): Promise<void> {
+  await apagarLancamentosDoCartaoNoMes(cartaoId, key);
+  redirect(`/cartoes/${cartaoId}/fatura`);
+}
+
+async function apagarLancamentosDoCartaoNoMes(cartaoId: string, key: string) {
   const { userId } = await exigirSessao();
   const mes = await getMes(userId, key);
   const restantes = mes.despesas.filter((d) => d.cartaoId !== cartaoId);
@@ -223,7 +238,6 @@ export async function apagarFaturaDoMes(
   revalidatePath(`/mes/${key}`);
   revalidatePath(`/mes/${key}/diagnostico`);
   revalidatePath("/cartoes");
-  revalidatePath(`/cartoes/${cartaoId}`);
   await logAlteracao(
     `apagou a fatura de um cartão (${removidos} lançamento(s), ${key})`,
   );
