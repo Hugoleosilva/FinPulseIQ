@@ -7,6 +7,7 @@ import { formatBRL, mesAtualKey, nomeMes } from "@/lib/format";
 import { emojiCategoria } from "@/lib/categorias";
 import { Card, TituloSecao, Aviso, BotaoLink } from "@/components/ui";
 import { BotaoExcluir } from "@/components/BotaoExcluir";
+import { Colapsavel } from "@/components/Colapsavel";
 import { FormCartao } from "./FormCartao";
 import { FormCompromisso } from "./FormCompromisso";
 import { FormDocumento } from "./FormDocumento";
@@ -45,7 +46,7 @@ export default async function PaginaCartoes() {
           </p>
         )}
         {cartoes.length > 0 && (
-          <ul className="mb-4 divide-y divide-borda rounded-xl border border-borda">
+          <ul className="divide-y divide-borda rounded-xl border border-borda">
             {cartoes.map((c) => (
               <li
                 key={c.id}
@@ -81,7 +82,11 @@ export default async function PaginaCartoes() {
             ))}
           </ul>
         )}
-        <FormCartao />
+        <div className="mt-3">
+          <Colapsavel titulo="+ Adicionar um cartão" aberto={cartoes.length === 0}>
+            <FormCartao />
+          </Colapsavel>
+        </div>
       </Card>
 
       <Card>
@@ -89,7 +94,7 @@ export default async function PaginaCartoes() {
           Compromissos futuros (parcelas)
         </TituloSecao>
         {compromissos.length > 0 && (
-          <ul className="mb-4 divide-y divide-borda rounded-xl border border-borda">
+          <ul className="divide-y divide-borda rounded-xl border border-borda">
             {compromissos.map((c) => (
               <li
                 key={c.id}
@@ -112,7 +117,14 @@ export default async function PaginaCartoes() {
             ))}
           </ul>
         )}
-        <FormCompromisso />
+        <div className="mt-3">
+          <Colapsavel
+            titulo="+ Adicionar um compromisso"
+            aberto={compromissos.length === 0}
+          >
+            <FormCompromisso />
+          </Colapsavel>
+        </div>
       </Card>
 
       <Card>
@@ -120,7 +132,7 @@ export default async function PaginaCartoes() {
           Documentos guardados
         </TituloSecao>
         {documentos.length > 0 && (
-          <ul className="mb-4 divide-y divide-borda rounded-xl border border-borda">
+          <ul className="divide-y divide-borda rounded-xl border border-borda">
             {documentos.map((d) => (
               <li
                 key={d.id}
@@ -154,7 +166,14 @@ export default async function PaginaCartoes() {
             ))}
           </ul>
         )}
-        <FormDocumento mesAtual={mesAtualKey()} />
+        <div className="mt-3">
+          <Colapsavel
+            titulo="+ Guardar um documento"
+            aberto={documentos.length === 0}
+          >
+            <FormDocumento mesAtual={mesAtualKey()} />
+          </Colapsavel>
+        </div>
       </Card>
     </div>
   );
