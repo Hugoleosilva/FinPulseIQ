@@ -6,7 +6,11 @@ import {
   alternarDespesaPaga,
   alternarFaturaCartaoPaga,
 } from "@/app/actions/lancamentos";
-import { emojiCategoria, ROTULO_ESSENCIALIDADE } from "@/lib/categorias";
+import {
+  emojiCategoria,
+  ROTULO_ESSENCIALIDADE,
+  NOMES_CATEGORIAS,
+} from "@/lib/categorias";
 import { formatBRL } from "@/lib/format";
 import { BotaoExcluir } from "@/components/BotaoExcluir";
 import { FormDespesa } from "./FormDespesa";
@@ -65,6 +69,23 @@ export function ListaDespesas({
 
   const nomeFatura = (d: Despesa) =>
     faturas.find((f) => f.chave === chaveCartao(d))?.nome ?? null;
+
+  // Ordena: primeiro os que não são de cartão (por categoria e dia), depois
+  // cada fatura de cartão junta. Independe da ordem em que foram cadastrados.
+  const ordemCat = (c: string) => {
+    const i = NOMES_CATEGORIAS.indexOf(c);
+    return i === -1 ? 999 : i;
+  };
+  const ordenadas = [...despesas].sort((a, b) => {
+    const ka = chaveCartao(a);
+    const kb = chaveCartao(b);
+    if ((ka === "") !== (kb === "")) return ka === "" ? -1 : 1;
+    if (ka !== kb) return ka.localeCompare(kb);
+    if (a.categoria !== b.categoria)
+      return ordemCat(a.categoria) - ordemCat(b.categoria);
+    if (a.dia !== b.dia) return a.dia - b.dia;
+    return a.descricao.localeCompare(b.descricao);
+  });
 
   return (
     <div className="flex flex-col gap-2">
@@ -129,7 +150,7 @@ export function ListaDespesas({
       ) : null}
 
       <ul className="divide-y divide-borda rounded-xl border border-borda">
-        {despesas.map((d) => {
+        {ordenadas.map((d) => {
           const daFatura = chaveCartao(d) !== "";
           return (
             <li key={d.id} className="p-3">

@@ -28,9 +28,13 @@ export function ListaReceitas({
     );
   }
 
+  const ordenadas = [...receitas].sort(
+    (a, b) => a.dia - b.dia || a.descricao.localeCompare(b.descricao),
+  );
+
   return (
     <ul className="divide-y divide-borda rounded-xl border border-borda">
-      {receitas.map((r) => {
+      {ordenadas.map((r) => {
         const temDetalhe =
           !!r.detalhe &&
           (r.detalhe.proventos.length > 0 || r.detalhe.descontos.length > 0);
