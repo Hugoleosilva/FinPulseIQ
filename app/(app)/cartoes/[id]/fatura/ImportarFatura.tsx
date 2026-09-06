@@ -31,6 +31,8 @@ interface Linha {
   natureza: NaturezaManual;
   parcelaAtual?: number;
   parcelaTotal?: number;
+  /** Ignorar a parcela detectada (ex.: quitação antecipada para cancelar). */
+  ignorarParcela?: boolean;
   titular: string | null;
   origem: TransacaoFatura["origem"];
 }
@@ -288,8 +290,8 @@ function AbaPDF({
         subcategoria: l.subcategoria,
         essencialidade: l.essencialidade,
         natureza: l.natureza,
-        parcelaAtual: l.parcelaAtual,
-        parcelaTotal: l.parcelaTotal,
+        parcelaAtual: l.ignorarParcela ? undefined : l.parcelaAtual,
+        parcelaTotal: l.ignorarParcela ? undefined : l.parcelaTotal,
         dia: 0, // servidor usa o dia do vencimento do cartão
       })),
   );
@@ -382,7 +384,8 @@ function AbaPDF({
             <strong>tipo</strong> de cada linha — é isso que o diagnóstico usa. O
             sistema chuta ao ler o PDF; ajuste o que não estiver certo. Em{" "}
             <strong>Tipo</strong>: “Não se repete” para o que não volta (ex.:
-            assinatura já cancelada), “Conta fixa” para o que vem todo mês.
+            assinatura já cancelada, ou parcelas que você quitou de uma vez para
+            encerrar), “Conta fixa” para o que vem todo mês.
           </p>
           <div className="overflow-x-auto rounded-xl border border-borda">
             <table className="w-full min-w-[62rem] text-sm">
@@ -468,32 +471,41 @@ function AbaPDF({
                       </select>
                     </td>
                     <td className="p-2">
-                      {l.parcelaAtual ? (
-                        <span className="text-xs text-texto-suave">
-                          parcelada
-                        </span>
-                      ) : (
-                        <select
-                          value={l.natureza}
-                          onChange={(e) =>
+                      <select
+                        value={
+                          l.parcelaTotal && !l.ignorarParcela
+                            ? "parcelada"
+                            : l.natureza
+                        }
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          if (v === "parcelada") {
+                            upd(idx, { ignorarParcela: false });
+                          } else {
                             upd(idx, {
-                              natureza: e.target.value as NaturezaManual,
-                            })
+                              natureza: v as NaturezaManual,
+                              ignorarParcela: l.parcelaTotal ? true : undefined,
+                            });
                           }
-                          className="w-40 rounded border border-borda px-2 py-1"
-                        >
-                          {(
-                            Object.keys(ROTULO_NATUREZA) as NaturezaManual[]
-                          ).map((n) => (
-                            <option key={n} value={n}>
-                              {ROTULO_NATUREZA[n]}
-                            </option>
-                          ))}
-                        </select>
-                      )}
+                        }}
+                        className="w-40 rounded border border-borda px-2 py-1"
+                      >
+                        {l.parcelaTotal ? (
+                          <option value="parcelada">
+                            Parcelada ({l.parcelaAtual}/{l.parcelaTotal})
+                          </option>
+                        ) : null}
+                        {(
+                          Object.keys(ROTULO_NATUREZA) as NaturezaManual[]
+                        ).map((n) => (
+                          <option key={n} value={n}>
+                            {ROTULO_NATUREZA[n]}
+                          </option>
+                        ))}
+                      </select>
                     </td>
                     <td className="p-2 text-texto-suave">
-                      {l.parcelaAtual
+                      {l.parcelaTotal && !l.ignorarParcela
                         ? `${l.parcelaAtual}/${l.parcelaTotal}`
                         : "—"}
                     </td>
