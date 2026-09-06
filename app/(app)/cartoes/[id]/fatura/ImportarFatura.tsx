@@ -408,6 +408,17 @@ function AbaPDF({
             </Aviso>
           ) : null}
 
+          {fatura.totalFatura &&
+          titularFiltro === "todos" &&
+          totalMarcado > fatura.totalFatura * 1.1 ? (
+            <Aviso tipo="alerta" titulo="Somou demais?">
+              As linhas marcadas somam {formatBRL(totalMarcado)}, mais que o total
+              da fatura ({formatBRL(fatura.totalFatura)}). Pode ter entrado
+              parcela de fatura futura — desmarque as linhas que não são deste
+              mês antes de importar.
+            </Aviso>
+          ) : null}
+
           <form action={importar} className="flex flex-col gap-2">
             <input type="hidden" name="linhas" value={payload} />
             <p className="text-sm text-texto-suave">
