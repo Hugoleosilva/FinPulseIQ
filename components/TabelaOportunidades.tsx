@@ -45,9 +45,11 @@ export function TabelaOportunidades({ ops }: { ops: Oportunidade[] }) {
                 </td>
                 <td className="tabular py-3 pr-3 text-right">
                   {formatBRL(o.gasto)}
-                  <span className="block text-xs text-texto-suave">
-                    {formatPct(o.pctRenda)} da renda
-                  </span>
+                  {o.pctRenda > 0 ? (
+                    <span className="block text-xs text-texto-suave">
+                      {formatPct(o.pctRenda)} da renda
+                    </span>
+                  ) : null}
                 </td>
                 <td className="tabular py-3 pr-3 text-right font-extrabold text-acento-escuro">
                   até {formatBRL(o.potencial)}

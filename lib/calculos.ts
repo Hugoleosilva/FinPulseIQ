@@ -371,8 +371,13 @@ function moeda(v: number): string {
 }
 
 function classificaPrioridade(potencial: number, receita: number): Prioridade {
-  if (potencial >= 0.04 * receita || potencial >= 200) return "alta";
-  if (potencial >= 0.015 * receita || potencial >= 75) return "media";
+  // Sem renda registrada no mês, só os limites em reais valem (senão
+  // "potencial >= 4% de 0" seria sempre verdadeiro e tudo viraria "Alta").
+  const temRenda = receita > 0;
+  if ((temRenda && potencial >= 0.04 * receita) || potencial >= 200)
+    return "alta";
+  if ((temRenda && potencial >= 0.015 * receita) || potencial >= 75)
+    return "media";
   return "baixa";
 }
 
