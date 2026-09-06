@@ -5,6 +5,7 @@ import { getMes, listarCartoes } from "@/lib/repo";
 import { keyValida, nomeMes, formatBRL, deslocaMes } from "@/lib/format";
 import { andamentoMes } from "@/lib/calculos";
 import { Card, Aviso } from "@/components/ui";
+import { Colapsavel } from "@/components/Colapsavel";
 import { AvisoAndamento } from "@/components/AvisoAndamento";
 import { WizardLancamento, type PassoWizard } from "./WizardLancamento";
 import { FormSaldoInicial } from "./FormSaldoInicial";
@@ -69,18 +70,27 @@ export default async function PaginaLancar({
           />
           <SecaoSalario chaveMes={key} salario={salario} />
 
-          <div>
-            <h3 className="mb-2 text-lg font-bold">Outras receitas</h3>
-            <p className="mb-3 text-sm text-texto-suave">
-              Aposentadoria ou pensão (sem descontos), aluguel que você recebe,
-              bicos, ajuda de familiares, vendas, rendimentos.
-            </p>
-            <FormReceita chaveMes={key} />
-          </div>
+          <div className="flex flex-col gap-3">
+            <div>
+              <h3 className="text-lg font-bold">Outras receitas</h3>
+              <p className="text-sm text-texto-suave">
+                Aposentadoria ou pensão (sem descontos), aluguel que você recebe,
+                bicos, ajuda de familiares, vendas, rendimentos.
+              </p>
+            </div>
 
-          {outrasReceitas.length > 0 ? (
-            <ListaReceitas chaveMes={key} receitas={outrasReceitas} />
-          ) : null}
+            {outrasReceitas.length > 0 ? (
+              <ListaReceitas chaveMes={key} receitas={outrasReceitas} />
+            ) : null}
+
+            <Colapsavel
+              id="lancar-form-receita"
+              titulo="+ Adicionar outra receita"
+              aberto={outrasReceitas.length === 0}
+            >
+              <FormReceita chaveMes={key} />
+            </Colapsavel>
+          </div>
         </div>
       ),
     },
@@ -107,12 +117,18 @@ export default async function PaginaLancar({
               eles.
             </Aviso>
           ) : null}
-          <FormDespesa chaveMes={key} cartoes={cartoes} />
           <ListaDespesas
             chaveMes={key}
             despesas={mes.despesas}
             cartoes={cartoes}
           />
+          <Colapsavel
+            id="lancar-form-despesa"
+            titulo="+ Adicionar um gasto"
+            aberto={mes.despesas.length === 0}
+          >
+            <FormDespesa chaveMes={key} cartoes={cartoes} />
+          </Colapsavel>
         </div>
       ),
     },
