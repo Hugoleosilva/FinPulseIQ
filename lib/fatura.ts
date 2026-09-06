@@ -321,24 +321,39 @@ export function interpretarFaturaItau(texto: string): FaturaLida {
 }
 
 /**
- * Remove duplicatas que aparecem quando a mesma compra parcelada consta na
- * fatura atual E na lista de "próximas faturas" (layout co-branded).
+ * Remove duplicatas de compras PARCELADAS que aparecem tanto na fatura atual
+ * quanto na lista de "próximas faturas" (layout co-branded). Só mexe em
+ * parceladas — compras avulsas de mesmo valor podem ser legítimas (cartão
+ * compartilhado, duas corridas de app etc.).
  */
 function dedupTransacoes(t: TransacaoFatura[]): TransacaoFatura[] {
   const chave = (x: TransacaoFatura) =>
-    `${norm(x.descricao).slice(0, 18)}|${x.valor}|${x.parcela?.total ?? 0}|${x.titular ?? ""}`;
-  const mapa = new Map<string, TransacaoFatura>();
+    `${norm(x.descricao).replace(/\d+$/, "").slice(0, 16)}|${x.valor}|${x.parcela!.total}`;
+
+  const melhorParcela = new Map<string, number>();
   for (const x of t) {
+    if (!x.parcela) continue;
     const k = chave(x);
-    const anterior = mapa.get(k);
-    if (
-      !anterior ||
-      (x.parcela && anterior.parcela && x.parcela.atual < anterior.parcela.atual)
-    ) {
-      mapa.set(k, x);
+    const atual = melhorParcela.get(k);
+    if (atual == null || x.parcela.atual < atual) {
+      melhorParcela.set(k, x.parcela.atual);
     }
   }
-  return [...mapa.values()];
+
+  const usados = new Set<string>();
+  const out: TransacaoFatura[] = [];
+  for (const x of t) {
+    if (!x.parcela) {
+      out.push(x);
+      continue;
+    }
+    const k = chave(x);
+    if (x.parcela.atual !== melhorParcela.get(k)) continue; // é a versão "futura"
+    if (usados.has(k)) continue; // já pegou uma cópia dessa parcela
+    usados.add(k);
+    out.push(x);
+  }
+  return out;
 }
 
 export async function lerFaturaPDF(arquivo: File): Promise<FaturaLida> {
