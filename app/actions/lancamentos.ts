@@ -417,6 +417,26 @@ export async function alternarDespesaPaga(
   await revalida(key, "marcou um gasto como pago/não pago");
 }
 
+/** Marca (ou desmarca) como pagas todas as despesas de um cartão no mês. */
+export async function alternarFaturaCartaoPaga(
+  key: string,
+  cartaoId: string,
+): Promise<void> {
+  const { userId } = await exigirSessao();
+  const mes = await getMes(userId, key);
+  const doCartao = (d: Despesa) =>
+    (d.cartaoId ?? (d.meioPagamento === "cartao" ? "__cartao__" : "")) ===
+    cartaoId;
+  const alvos = mes.despesas.filter(doCartao);
+  if (alvos.length === 0) return;
+  const marcar = !alvos.every((d) => d.pago);
+  const despesas = mes.despesas.map((d) =>
+    doCartao(d) ? { ...d, pago: marcar } : d,
+  );
+  await salvarMes(userId, key, { despesas });
+  await revalida(key, `marcou a fatura de um cartão como ${marcar ? "paga" : "não paga"}`);
+}
+
 export async function alternarReceitaRecebida(
   key: string,
   id: string,
