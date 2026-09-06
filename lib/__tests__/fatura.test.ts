@@ -124,3 +124,57 @@ describe("interpretarFaturaItau", () => {
     ).toBe("servico");
   });
 });
+
+// Layout co-branded (Pão de Açúcar): transações ANTES do cabeçalho,
+// e a mesma parcelada repetida na seção "próximas faturas".
+const FATURA_COBRAND = `
+Cartão 5312.XXXX.XXXX.0809
+Total desta fatura 6.787,93
+Vencimento: 12/09/2026
+Continua...
+03/02 CompraFacil 07/12 489,62
+05/07 Globo Globoplay 02/12 22,28
+14/08 FLEXPAG*COMPESA 1.705,00
+14/08 UNIMED RECIFE 2.272,90
+24/08 DL*UberRides 15,51
+27/08 Google One 14,99
+Lançamentos: compras e saques Lançamentos: compras e saques
+Lançamentos: produtos e serviços
+Total dos lançamentos atuais 6.787,93
+Compras parceladas - próximas faturas
+DATA ESTABELECIMENTO VALOR EM R$
+03/02 CompraFacil 08/12 489,62
+05/07 Globo Globoplay 03/12 22,28
+`;
+
+describe("interpretarFaturaItau — layout co-branded", () => {
+  const f = interpretarFaturaItau(FATURA_COBRAND);
+
+  it("pega as transações que vêm antes do cabeçalho", () => {
+    expect(f.transacoes.some((t) => t.descricao.includes("COMPESA"))).toBe(true);
+    expect(f.transacoes.some((t) => t.descricao.includes("UNIMED"))).toBe(true);
+    expect(f.transacoes.some((t) => t.descricao.includes("UberRides"))).toBe(
+      true,
+    );
+  });
+
+  it("não duplica a parcelada que aparece em 'próximas faturas'", () => {
+    const compraFacil = f.transacoes.filter((t) =>
+      t.descricao.includes("CompraFacil"),
+    );
+    expect(compraFacil).toHaveLength(1);
+    expect(compraFacil[0].parcela).toEqual({ atual: 7, total: 12 });
+  });
+
+  it("classifica pelo estabelecimento (sem categoria impressa)", () => {
+    expect(
+      f.transacoes.find((t) => t.descricao.includes("COMPESA"))!.categoria,
+    ).toBe("Moradia");
+    expect(
+      f.transacoes.find((t) => t.descricao.includes("UNIMED"))!.categoria,
+    ).toBe("Saúde");
+    expect(
+      f.transacoes.find((t) => t.descricao.includes("Globoplay"))!.categoria,
+    ).toBe("Assinaturas");
+  });
+});

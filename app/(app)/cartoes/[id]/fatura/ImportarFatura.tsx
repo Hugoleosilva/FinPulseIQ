@@ -396,6 +396,18 @@ function AbaPDF({
             </table>
           </div>
 
+          {fatura.totalFatura &&
+          titularFiltro === "todos" &&
+          totalMarcado < fatura.totalFatura * 0.85 ? (
+            <Aviso tipo="alerta" titulo="Faltam transações?">
+              As linhas marcadas somam {formatBRL(totalMarcado)}, mas o total da
+              fatura é {formatBRL(fatura.totalFatura)}. Esta fatura pode ter um
+              layout que o leitor não pega bem — confira a lista, complete o que
+              faltar manualmente depois, ou use{" "}
+              <strong>“Só o valor total”</strong>.
+            </Aviso>
+          ) : null}
+
           <form action={importar} className="flex flex-col gap-2">
             <input type="hidden" name="linhas" value={payload} />
             <p className="text-sm text-texto-suave">

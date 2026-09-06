@@ -131,17 +131,25 @@ function classificar(
 // --- parsing ---------------------------------------------------------------
 
 const RE_TRANSACAO =
-  /^(\d{2}\/\d{2})\s+(.+?)(?:\s+(\d{2})\/(\d{2}))?\s+(-?\d{1,3}(?:\.\d{3})*,\d{2})\s*$/;
+  /^(\d{2}\/\d{2})\s+(.+?)(?:\s*(\d{2})\/(\d{2}))?\s+(-?\d{1,3}(?:\.\d{3})*,\d{2})\s*$/;
 
 const RE_NOME = /^[A-ZÀ-Ú][A-ZÀ-Ú.\s]{4,}$/;
 
 const PARAR = [
-  "COMPRAS PARCELADAS - PROXIMAS FATURAS",
-  "COMPRAS PARCELADAS – PROXIMAS FATURAS",
+  "COMPRAS PARCELADAS",
+  "PROXIMAS FATURAS",
   "TOTAL DOS LANCAMENTOS ATUAIS",
+  "TOTAL PARA PROXIMAS FATURAS",
+  "PROXIMA FATURA ",
+  "DEMAIS FATURAS",
   "LIMITES DE CREDITO",
+  "LIMITE TOTAL DE CREDITO",
   "ENCARGOS COBRADOS NESTA FATURA",
   "DEMAIS TAXAS DE JUROS",
+  "NOVO TETO DE JUROS",
+  "SIMULACAO DE COMPRAS",
+  "SIMULACAO SAQUE",
+  "FIQUE ATENTO AOS ENCARGOS",
 ];
 
 const CABECALHOS_IGNORAR = [
@@ -237,7 +245,13 @@ export function interpretarFaturaItau(texto: string): FaturaLida {
       continue;
     }
     if (CABECALHOS_IGNORAR.some((c) => N.includes(c))) continue;
-    if (secao === "pagamentos" || secao === null) continue;
+    if (secao === "pagamentos") continue;
+
+    // Layout co-branded (Pão de Açúcar): transações vêm antes do cabeçalho.
+    if (secao === null) {
+      if (RE_TRANSACAO.test(linha)) secao = "compra";
+      else continue;
+    }
 
     const primeira = N.split(/\s+/)[0];
     const doisPrimeiros = N.split(/\s+/).slice(0, 2).join(" ");
@@ -280,7 +294,7 @@ export function interpretarFaturaItau(texto: string): FaturaLida {
         pendente = null;
         continue;
       }
-      const descricao = m[2].replace(/\s+/g, " ").trim();
+      const descricao = m[2].replace(/\s+/g, " ").replace(/[\s*-]+$/, "").trim();
       pendente = {
         data: m[1],
         descricao,
@@ -299,28 +313,32 @@ export function interpretarFaturaItau(texto: string): FaturaLida {
       pendente.essencialidade = c.essencialidade;
       continue;
     }
-
-    // linha "categoria CIDADE" logo abaixo de uma transação
-    if (pendente) {
-      const primeira = N.split(/\s+/)[0];
-      const doisPrimeiros = N.split(/\s+/).slice(0, 2).join(" ");
-      const catItau =
-        CATEGORIAS_ITAU.find((c) => c === doisPrimeiros) ??
-        CATEGORIAS_ITAU.find((c) => c === primeira) ??
-        null;
-      if (catItau) {
-        const c = classificar(pendente.descricao, catItau);
-        pendente.categoria = c.categoria;
-        pendente.subcategoria = c.subcategoria;
-        pendente.essencialidade = c.essencialidade;
-        empurra(pendente);
-        pendente = null;
-      }
-    }
   }
   empurra(pendente);
 
+  out.transacoes = dedupTransacoes(out.transacoes);
   return out;
+}
+
+/**
+ * Remove duplicatas que aparecem quando a mesma compra parcelada consta na
+ * fatura atual E na lista de "próximas faturas" (layout co-branded).
+ */
+function dedupTransacoes(t: TransacaoFatura[]): TransacaoFatura[] {
+  const chave = (x: TransacaoFatura) =>
+    `${norm(x.descricao).slice(0, 18)}|${x.valor}|${x.parcela?.total ?? 0}|${x.titular ?? ""}`;
+  const mapa = new Map<string, TransacaoFatura>();
+  for (const x of t) {
+    const k = chave(x);
+    const anterior = mapa.get(k);
+    if (
+      !anterior ||
+      (x.parcela && anterior.parcela && x.parcela.atual < anterior.parcela.atual)
+    ) {
+      mapa.set(k, x);
+    }
+  }
+  return [...mapa.values()];
 }
 
 export async function lerFaturaPDF(arquivo: File): Promise<FaturaLida> {
