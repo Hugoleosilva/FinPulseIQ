@@ -56,6 +56,14 @@ export default async function PaginaCartao({
     .filter((x): x is FaturaTotalItem => x !== null)
     .sort((a, b) => b.key.localeCompare(a.key));
 
+  // já há transações detalhadas (PDF importado) neste cartão?
+  const temDetalhe = porMes.some((m) =>
+    m.gastos.some(
+      (g) =>
+        !(g.categoria === CAT_FATURA && SUBS_TOTAL.includes(g.subcategoria)),
+    ),
+  );
+
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -85,15 +93,26 @@ export default async function PaginaCartao({
       </Card>
 
       <Card>
-        <TituloSecao ajuda="Só o valor total da fatura, mês a mês — marque se ainda está em aberto. Bom para prever o que vem.">
-          Fatura por mês (valor total)
-        </TituloSecao>
-        <FaturasCartao
-          cartaoId={id}
-          cartaoNome={cartao.nome}
-          mesAtual={mesAtualKey()}
-          faturas={faturasTotais}
-        />
+        <Colapsavel
+          titulo={
+            faturasTotais.length > 0
+              ? `Fatura por mês (valor total) · ${faturasTotais.length}`
+              : "Fatura por mês (valor total)"
+          }
+          aberto={faturasTotais.length === 0 && !temDetalhe}
+          ajuda={
+            temDetalhe
+              ? "Este cartão já tem faturas detalhadas por PDF. Use esta parte só para meses futuros ou faturas ainda em aberto."
+              : "Só o valor total da fatura, mês a mês — marque se ainda está em aberto. Bom para prever o que vem."
+          }
+        >
+          <FaturasCartao
+            cartaoId={id}
+            cartaoNome={cartao.nome}
+            mesAtual={mesAtualKey()}
+            faturas={faturasTotais}
+          />
+        </Colapsavel>
       </Card>
 
       {porMes.length === 0 ? (
