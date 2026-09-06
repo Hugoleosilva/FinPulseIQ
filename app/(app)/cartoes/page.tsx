@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { exigirSessao } from "@/lib/dal";
-import { listarCartoes, listarCompromissos } from "@/lib/repo";
+import { listarCartoes, listarCompromissos, listarMeses } from "@/lib/repo";
 import { listarDocumentos } from "@/lib/arquivos";
 import { ROTULO_TIPO_DOC } from "@/lib/documentos";
+import { situacaoFatura } from "@/lib/calculos";
 import { formatBRL, mesAtualKey, nomeMes } from "@/lib/format";
 import { emojiCategoria } from "@/lib/categorias";
 import { Card, TituloSecao, Aviso, BotaoLink } from "@/components/ui";
@@ -22,11 +23,16 @@ export const metadata: Metadata = { title: "Cartões e documentos — FinPulseIQ
 
 export default async function PaginaCartoes() {
   const { userId } = await exigirSessao();
-  const [cartoes, compromissos, documentos] = await Promise.all([
+  const [cartoes, compromissos, documentos, meses] = await Promise.all([
     listarCartoes(userId),
     listarCompromissos(userId),
     listarDocumentos(userId),
+    listarMeses(userId),
   ]);
+
+  const keyAtual = mesAtualKey();
+  const despesasMesAtual =
+    meses.find((m) => m.key === keyAtual)?.despesas ?? [];
 
   return (
     <div className="flex flex-col gap-6">
@@ -48,45 +54,73 @@ export default async function PaginaCartoes() {
         )}
         {cartoes.length > 0 && (
           <ul className="divide-y divide-borda rounded-xl border border-borda">
-            {cartoes.map((c) => (
-              <li
-                key={c.id}
-                className="flex flex-wrap items-center justify-between gap-3 p-3"
-              >
-                <span>
-                  <Link
-                    href={`/cartoes/${c.id}`}
-                    className="font-semibold text-acento-escuro underline decoration-transparent hover:decoration-inherit"
-                  >
-                    {c.nome}
-                  </Link>
-                  {c.compartilhado ? (
-                    <span className="ml-2 rounded bg-acento/10 px-1.5 py-0.5 text-xs font-bold text-acento-escuro">
-                      compartilhado{c.titularFatura ? ` · ${c.titularFatura}` : ""}
+            {cartoes.map((c) => {
+              const qtd = despesasMesAtual.filter(
+                (d) => d.cartaoId === c.id,
+              ).length;
+              const sit = situacaoFatura(c, keyAtual, qtd);
+              const badge = !sit.fechada
+                ? {
+                    txt: `Fatura de ${nomeMes(keyAtual)} em aberto`,
+                    cls: "bg-acento/10 text-acento-escuro",
+                  }
+                : sit.enviada
+                  ? {
+                      txt: `Fatura de ${nomeMes(keyAtual)} já enviada`,
+                      cls: "bg-ok/15 text-ok",
+                    }
+                  : {
+                      txt: `Falta enviar a fatura de ${nomeMes(keyAtual)}`,
+                      cls: "bg-alerta/15 text-alerta",
+                    };
+              return (
+                <li
+                  key={c.id}
+                  className="flex flex-wrap items-center justify-between gap-3 p-3"
+                >
+                  <span>
+                    <Link
+                      href={`/cartoes/${c.id}`}
+                      className="font-semibold text-acento-escuro underline decoration-transparent hover:decoration-inherit"
+                    >
+                      {c.nome}
+                    </Link>
+                    {c.compartilhado ? (
+                      <span className="ml-2 rounded bg-acento/10 px-1.5 py-0.5 text-xs font-bold text-acento-escuro">
+                        compartilhado
+                        {c.titularFatura ? ` · ${c.titularFatura}` : ""}
+                      </span>
+                    ) : null}
+                    <span className="block text-sm text-texto-suave">
+                      Limite {formatBRL(c.limite)} · fecha dia {c.diaFechamento} ·
+                      vence dia {c.diaVencimento}
                     </span>
-                  ) : null}
-                  <span className="block text-sm text-texto-suave">
-                    Limite {formatBRL(c.limite)} · fecha dia {c.diaFechamento} ·
-                    vence dia {c.diaVencimento}
+                    <span
+                      className={`mt-1 inline-block rounded px-1.5 py-0.5 text-xs font-bold ${badge.cls}`}
+                    >
+                      {badge.txt}
+                    </span>
                   </span>
-                </span>
-                <span className="flex items-center gap-2">
-                  <BotaoLink href={`/cartoes/${c.id}`} variante="secundario">
-                    Ver
-                  </BotaoLink>
-                  <BotaoLink
-                    href={`/cartoes/${c.id}/fatura`}
-                    variante="secundario"
-                  >
-                    Lançar fatura
-                  </BotaoLink>
-                  <BotaoExcluir
-                    acao={apagarCartaoAction.bind(null, c.id)}
-                    confirmar={`Apagar o cartão "${c.nome}"?`}
-                  />
-                </span>
-              </li>
-            ))}
+                  <span className="flex items-center gap-2">
+                    <BotaoLink href={`/cartoes/${c.id}`} variante="secundario">
+                      {sit.enviada ? "Ver / editar" : "Ver"}
+                    </BotaoLink>
+                    <BotaoLink
+                      href={`/cartoes/${c.id}/fatura`}
+                      variante="secundario"
+                    >
+                      {sit.fechada && !sit.enviada
+                        ? "Enviar fatura"
+                        : "Lançar fatura"}
+                    </BotaoLink>
+                    <BotaoExcluir
+                      acao={apagarCartaoAction.bind(null, c.id)}
+                      confirmar={`Apagar o cartão "${c.nome}"?`}
+                    />
+                  </span>
+                </li>
+              );
+            })}
           </ul>
         )}
         <div className="mt-3">

@@ -209,3 +209,22 @@ export async function apagarFaturaTotal(
   revalidatePath(`/cartoes/${cartaoId}`);
   await logAlteracao(`apagou a fatura de um cartão (${key})`);
 }
+
+/** Apaga TODOS os lançamentos de um cartão num mês (fatura enviada errada). */
+export async function apagarFaturaDoMes(
+  cartaoId: string,
+  key: string,
+): Promise<void> {
+  const { userId } = await exigirSessao();
+  const mes = await getMes(userId, key);
+  const restantes = mes.despesas.filter((d) => d.cartaoId !== cartaoId);
+  const removidos = mes.despesas.length - restantes.length;
+  await salvarMes(userId, key, { despesas: restantes });
+  revalidatePath(`/mes/${key}`);
+  revalidatePath(`/mes/${key}/diagnostico`);
+  revalidatePath("/cartoes");
+  revalidatePath(`/cartoes/${cartaoId}`);
+  await logAlteracao(
+    `apagou a fatura de um cartão (${removidos} lançamento(s), ${key})`,
+  );
+}

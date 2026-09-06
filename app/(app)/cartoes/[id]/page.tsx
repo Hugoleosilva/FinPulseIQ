@@ -7,7 +7,9 @@ import { emojiCategoria } from "@/lib/categorias";
 import { mesAtualKey } from "@/lib/format";
 import { Card, TituloSecao, Aviso, BotaoLink } from "@/components/ui";
 import { Colapsavel } from "@/components/Colapsavel";
+import { BotaoExcluir } from "@/components/BotaoExcluir";
 import { FaturasCartao, type FaturaTotalItem } from "./FaturasCartao";
+import { apagarFaturaDoMes } from "@/app/actions/fatura";
 import type { Despesa } from "@/lib/tipos";
 
 const CAT_FATURA = "Fatura de cartão (sem detalhar)";
@@ -145,7 +147,12 @@ export default async function PaginaCartao({
           </Card>
 
           {porMes.map((m) => (
-            <MesDoCartao key={m.key} chave={m.key} gastos={m.gastos} />
+            <MesDoCartao
+              key={m.key}
+              cartaoId={id}
+              chave={m.key}
+              gastos={m.gastos}
+            />
           ))}
         </>
       )}
@@ -162,7 +169,15 @@ function Info({ rotulo, valor }: { rotulo: string; valor: string }) {
   );
 }
 
-function MesDoCartao({ chave, gastos }: { chave: string; gastos: Despesa[] }) {
+function MesDoCartao({
+  cartaoId,
+  chave,
+  gastos,
+}: {
+  cartaoId: string;
+  chave: string;
+  gastos: Despesa[];
+}) {
   const total = gastos.reduce((a, d) => a + d.valor, 0);
 
   const porCategoria = new Map<string, number>();
@@ -174,10 +189,17 @@ function MesDoCartao({ chave, gastos }: { chave: string; gastos: Despesa[] }) {
 
   return (
     <Card>
-      <div className="mb-3 flex items-baseline justify-between gap-2">
+      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-xl font-bold">{nomeMesTitulo(chave)}</h2>
-        <span className="tabular text-xl font-extrabold">
-          {formatBRL(total)}
+        <span className="flex items-center gap-3">
+          <span className="tabular text-xl font-extrabold">
+            {formatBRL(total)}
+          </span>
+          <BotaoExcluir
+            acao={apagarFaturaDoMes.bind(null, cartaoId, chave)}
+            rotulo="Apagar fatura do mês"
+            confirmar={`Apagar TODOS os ${gastos.length} lançamento(s) deste cartão em ${nomeMesTitulo(chave)}? Use se a fatura foi enviada errada (ex.: dados de outro cartão).`}
+          />
         </span>
       </div>
 

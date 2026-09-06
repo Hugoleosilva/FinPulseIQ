@@ -11,6 +11,7 @@ import {
   parcelasFuturasDoMes,
   somarCompromissoFuturo,
   andamentoMes,
+  situacaoFatura,
 } from "../calculos";
 
 function d(p: Partial<Despesa>): Despesa {
@@ -312,5 +313,38 @@ describe("nivelSaude", () => {
     expect(n.score).toBeLessThan(65);
     expect(["normal", "ruim", "critico"]).toContain(n.faixa);
     expect(n.componentes).toHaveLength(6);
+  });
+});
+
+describe("situacaoFatura", () => {
+  const cartao = { diaFechamento: 5, diaVencimento: 12 };
+  const hoje = { ano: 2026, mes: 9, dia: 6 };
+
+  it("mês atual, já passou o fechamento e sem lançamento: fechada e não enviada", () => {
+    const s = situacaoFatura(cartao, "2026-09", 0, hoje);
+    expect(s).toEqual({ fechada: true, enviada: false });
+  });
+
+  it("mês atual, antes do fechamento: em aberto", () => {
+    const s = situacaoFatura({ diaFechamento: 8, diaVencimento: 15 }, "2026-09", 0, hoje);
+    expect(s.fechada).toBe(false);
+  });
+
+  it("com lançamentos: enviada", () => {
+    const s = situacaoFatura(cartao, "2026-09", 3, hoje);
+    expect(s.enviada).toBe(true);
+  });
+
+  it("mês futuro: em aberto", () => {
+    expect(situacaoFatura(cartao, "2026-11", 0, hoje).fechada).toBe(false);
+  });
+
+  it("mês passado: fechada", () => {
+    expect(situacaoFatura({ diaFechamento: 28, diaVencimento: 5 }, "2026-08", 0, hoje).fechada).toBe(true);
+  });
+
+  it("fecha num mês e vence no seguinte: fatura do mês atual já fechou", () => {
+    const s = situacaoFatura({ diaFechamento: 28, diaVencimento: 5 }, "2026-09", 0, hoje);
+    expect(s.fechada).toBe(true);
   });
 });

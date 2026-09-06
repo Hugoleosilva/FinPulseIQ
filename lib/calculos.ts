@@ -713,3 +713,40 @@ export interface PontoHistorico {
   score: number;
   faixa: Faixa;
 }
+
+// ---------------------------------------------------------------------------
+// Situação da fatura de um cartão no mês
+// ---------------------------------------------------------------------------
+
+export interface SituacaoFatura {
+  /** A fatura desse mês já fechou (passou o dia de fechamento)? */
+  fechada: boolean;
+  /** Já existe algum lançamento desse cartão nesse mês (PDF ou valor total)? */
+  enviada: boolean;
+}
+
+/**
+ * Situação da fatura de `cartao` no mês `keyMes` ("AAAA-MM"), comparando com
+ * `hoje`. `qtdLancamentos` = quantos gastos desse cartão já existem no mês.
+ */
+export function situacaoFatura(
+  cartao: { diaFechamento: number; diaVencimento: number },
+  keyMes: string,
+  qtdLancamentos: number,
+  hoje: DataBR = agoraBrasil(),
+): SituacaoFatura {
+  const keyHoje = `${hoje.ano}-${String(hoje.mes).padStart(2, "0")}`;
+  let fechada: boolean;
+  if (keyMes < keyHoje) {
+    fechada = true; // mês já passou
+  } else if (keyMes > keyHoje) {
+    fechada = false; // mês futuro
+  } else if (cartao.diaVencimento < cartao.diaFechamento) {
+    // fecha num mês e vence no seguinte: a fatura que vence neste mês
+    // já fechou no mês passado.
+    fechada = true;
+  } else {
+    fechada = hoje.dia >= cartao.diaFechamento;
+  }
+  return { fechada, enviada: qtdLancamentos > 0 };
+}
